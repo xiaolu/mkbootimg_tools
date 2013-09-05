@@ -1,0 +1,161 @@
+Refer to device/*/dtbtool.txt
+
+---------------------------------------------------------------------
+Copyright (c) 2012, The Linux Foundation. All rights reserved.
+
+Redistribution and use in source form and compiled forms (SGML, HTML,
+PDF, PostScript, RTF and so forth) with or without modification, are
+permitted provided that the following conditions are met:
+
+Redistributions in source form must retain the above copyright
+notice, this list of conditions and the following disclaimer as the
+first lines of this file unmodified.
+
+Redistributions in compiled form (transformed to other DTDs,
+converted to PDF, PostScript, RTF and other formats) must reproduce
+the above copyright notice, this list of conditions and the following
+disclaimer in the documentation and/or other materials provided with
+the distribution.
+
+THIS DOCUMENTATION IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED
+WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE AND
+NON-INFRINGEMENT ARE DISCLAIMED. IN NO EVENT SHALL THE FREEBSD
+DOCUMENTATION PROJECT BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS DOCUMENTATION, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
+DAMAGE.
+
+
+Android - Table of Device Tree
+==============================
+
+0) Document revision
+   v1.0 - Initial version (dng)
+
+1) Android boot image:
+----------------------
+1.1) Header:
+   1) Magic (8B)
+   2) kernel size (4B)
+   3) kernel addr (4B)
+   4) ramdisk size (4B)
+   5) ramdisk addr (4B)
+   6) 2ndary size (4B)
+   7) 2ndary addr (4B)
+   8) tags addr (4B)
+   9) page size (4B)
+  10) unused #1 (4B) (zero in standard Android)
+  11) unused #2 (4B) (zero in standard Android)
+  12) product name (16B)
+  13) kernel cmdline (512B)
+  14) id (8B)
+
+1.2) Layout:
+   A) header (as above - 1 page)
+   B) kernel (n pages)
+   C) ramdisk (m pages)
+   D) second stage (o pages)
+
+2) QC table of device tree
+--------------------------
+2.1) Changes:
+   i) use "unused #1, #2" members in existing boot image
+      header to point to new table of device tree
+      (#1 - size of QC table of DT)
+  ii) append table of device tree (described later)
+      after "D) second stage"
+
+2.2) Format:
+                                 size
+   x      +------------------+
+   |      | MAGIC ("QCDT")   |   4B
+   |      +------------------+
+ header   | VERSION          |   uint32 (initial version 1)
+   |      +------------------+
+   |      | num of DTBs      |   uint32 (number of DTB entries)
+   x      +------------------+
+   |      | platform id #1   |   uint32 (e.g. ID for MSM8974)
+   |      +------------------+
+   |      | variant id #1    |   uint32 (e.g. ID for CDP, MTP)
+ device   +------------------+
+  #1      | soc rev #1       |   uint32 (e.g. MSM8974 v2)
+ entry    +------------------+
+   |      | offset #1        |   uint32 (byte offset from start/before MAGIC
+   |      +------------------+           to DTB entry)
+   |      | size #1          |   uint32 (size in bytes of DTB blob)
+   x      +------------------+
+   .              .
+   .              .  (repeat)
+   .              .
+
+   x      +------------------+
+   |      | platform id #Z   |   uint32 (e.g. ID for MSM8974)
+   |      +------------------+
+  device  | variant id #Z    |   uint32 (e.g. ID for CDP, MTP)
+  #Z      +------------------+
+  entry   | soc rev #Z       |   uint32 (e.g. MSM8974 v2)
+  (last)  +------------------+
+   |      | offset #Z        |   uint32 (byte offset from start/before MAGIC
+   x      +------------------+           to DTB entry)
+          | 0 ("zero")       |   uint32 (end of list delimiter)
+          +------------------+           to DTB entry)
+          | padding          |   variable length for next DTB to start on
+          +------------------+           page boundary
+          | DTB #1           |   variable (start is page aligned)
+          |                  |
+          |                  |
+          +------------------+
+          | padding          |   variable length for next DTB to start on
+          +------------------+           page boundary
+                  .
+                  .
+                  .
+
+          +------------------+
+          | DTB #Z (last)    |   variable (start is page aligned)
+          |                  |
+          |                  |
+          +------------------+
+
+3) Operations
+-------------
+3.1) Build-time:
+  1) Each DTS per device will add a "qcom,msm-id" triplet
+     e.g. for msm8974-sim.dts, add
+          qcom,msm-id = <x y z>;
+     x = ID for msm8974
+     y = ID for CDP, MTP, etc.
+     z = ID for soc revision
+     The triplet can optionally be an array of triplets:
+         qcom,msm-id = <x1, y1, z1>, <x2, y2, z2>, ...;
+  2) Kernel compile will generate the DTB
+  3) Android build will run a new tool (dtbTool)
+     a) scan the DTB output directory for all compiled DTB
+     b) decompile the DTB for "qcom,msm-id"
+     c) generate the QC table of device tree in sorted
+        order (platform, variant, soc rev)
+     d) modified mkbootimg will merge new table of DT
+
+3.2) Run-time:
+  1) LK bootloader will obtain MSM id/variant/soc rev info
+     either from early bootloaders or via other means
+  2) LK bootloader will check entries #10 for non-zero
+     value (set to zero for standard boot.img).  If the
+     value is non-zero, refer to page section after
+     the "second stage" in the boot.img layout
+  3) Check QCDT magic
+  4) Check QCDT version (optional LK to handle multiple
+     QCDT version)
+  5) LK scans through the QCDT table to look for matching
+     entry.  Search order is:
+     1) platform ID exact match
+     2) variant ID exact match
+     3) select the highest soc rev in QCDT that is
+        equal to or lower than the runtime detected soc rev
+  6) Load the matching DTB blob to the tags addr
+  7) LK pass the correct DTB to the kernel
