@@ -1,0 +1,145 @@
+#!/bin/bash
+
+#boot.img tools
+trap "clean" 2 3 4
+workdir=$(pwd)
+mkbootimg_dtb=./mkbootimg_dtb
+mkbootimg=./mkbootimg
+
+C_H1="\033[1;32m"
+C_CLEAR="\033[0;0m"
+
+pout() {
+	printf "${C_H1}${*}${C_CLEAR}\n"
+}
+
+clean()
+{
+	rm -rf /tmp/mkboot.*
+	pout "cleanup...."
+	exit
+}
+if [ $# -lt 2 ] || [ ! -f $1 ] || ([ ! -z $3 ] && [ ! -e $2 ]); then
+	pout "Not enough parameters or parameter error!\n"
+	pout "repack boot.img：\n\t$(basename $0) [img] [ramdisk.gz or ramdisk dir] [newbootfile]"
+	pout "\t$(basename $0) boot.img ramdisk newboot.img"
+	pout "unpack boot.img & decompress ramdisk：\n\t$(basename $0) [img] [output dir]"
+	pout "\t$(basename $0) boot.img boot20130905"
+	clean
+fi
+#If only two parameters, unpack boot.img.
+if [ -z $3 ]; then
+	tempdir="$(readlink -f $2)"
+	rm -rf $tempdir
+	mkdir -p $tempdir
+	pout "Unpack & decompress $1 to $2"
+else
+	tempdir=$(mktemp -d /tmp/mkboot.XXXX)
+	pout "Repack $1 & ramdisk $2 to $3"
+fi
+
+
+cp -f $1 $tempdir/
+cd $tempdir
+bootimg=$(basename $1)
+offset=$(grep -abo ANDROID! $bootimg | cut -f 1 -d :)
+[ -z $offset ] && clean
+if [ $offset -gt 0 ]; then
+		dd if=$bootimg of=bootimg bs=$offset skip=1 2>/dev/null
+		bootimg=bootimg
+fi
+kernel_size=$(od -A n -D -j 8 -N 4 $bootimg | sed 's/ //g')
+kernel_addr=0x$(od -A n -H -j 12 -N 4 $bootimg | sed 's/ //g')
+base_addr=0x$(od -A n -h -j 14 -N 2 $bootimg | sed 's/ //g')0000
+ramdisk_size=$(od -A n -D -j 16 -N 4 $bootimg | sed 's/ //g')
+ramdisk_addr=0x$(od -A n -H -j 20 -N 4 $bootimg | sed 's/ //g')
+second_size=$(od -A n -D -j 24 -N 4 $bootimg | sed 's/ //g')
+second_addr=0x$(od -A n -H -j 28 -N 4 $bootimg | sed 's/ //g')
+tags_addr=0x$(od -A n -H -j 32 -N 4 $bootimg | sed 's/ //g')
+page_size=$(od -A n -D -j 36 -N 4 $bootimg | sed 's/ //g')
+dtb_size=$(od -A n -D -j 40 -N 4 $bootimg | sed 's/ //g')
+#dtb_addr=0x$(od -A n -H -j 44 -N 4 $bootimg | sed 's/ //g')
+cmd_line=$(od -A n --strings -j 64 -N 512 $bootimg)
+
+k_count=$(((kernel_size+page_size-1)/page_size))
+r_count=$(((ramdisk_size+page_size-1)/page_size))
+s_count=$(((second_size+page_size-1)/page_size))
+d_count=$(((dtb_size+page_size-1)/page_size))
+#k_offset=$page_size
+#r_offset=$((k_offset+(n*page_size)))
+#s_offset=$((r_offset+(m*page_size)))
+#d_offset=$((s_offset+(o*page_size)))
+k_offset=1
+r_offset=$((k_offset+k_count))
+s_offset=$((r_offset+r_count))
+d_offset=$((s_offset+s_count))
+
+dd if=$bootimg of=zImage_tmp bs=$page_size skip=$k_offset count=$k_count 2>/dev/null
+dd if=zImage_tmp of=zImage bs=$kernel_size count=1	2>/dev/null
+if [ -z $3 ]; then
+	dd if=$bootimg of=ramdisk_tmp bs=$page_size skip=$r_offset count=$r_count 2>/dev/null
+	dd if=ramdisk_tmp of=ramdisk.gz bs=$ramdisk_size count=1	2>/dev/null
+fi	
+if [ $dtb_size -gt 0 ]; then
+	dd if=$bootimg of=dt.img_tmp bs=$page_size skip=$d_offset count=$d_count 2>/dev/null
+	dd if=dt.img_tmp of=dt.img bs=$dtb_size count=1	2>/dev/null
+	dt="$tempdir/dt.img"
+fi
+rm -f *_tmp $(basename $1) $bootimg
+
+kernel="$tempdir/zImage"
+ramdisk=$tempdir/ramdisk.gz
+[ ! -f $kernel ] && clean
+#print boot.img info
+pout "  kernel         : $kernel"
+pout "  ramdisk        : $ramdisk"
+pout "  page_size      : $page_size"
+pout "  base_addr      : $base_addr"
+pout "  kernel size    : $kernel_size"
+pout "  kernel_addr    : $kernel_addr"
+pout "  ramdisk_size   : $ramdisk_size"
+pout "  ramdisk_addr   : $ramdisk_addr"
+pout "  second_size    : $second_size"
+pout "  second_addr    : $second_addr"
+if [ $dtb_size -gt 0 ]; then
+	pout "  dtb_size       : $dtb_size"
+	pout "  tags_addr      : $tags_addr"
+fi
+pout "  cmdline        : $cmd_line"
+
+#decompression ramdisk.gz
+if [ -z $3 ]; then
+	mkdir ramdisk
+	cd ramdisk
+	gzip -d -c ../ramdisk.gz | cpio -i -d -m  --no-absolute-filenames 2>/dev/null
+	#Unpack Finish to exit.
+	pout "Unpack completed."
+	exit
+fi
+cd $workdir
+ramdisk=$2
+#if ramdisk is a directory,create ramdisk.gz
+if [ -d $2 ]; then
+	cd $2
+	find . | cpio -R 0:0 -H newc -o 2>/dev/null | gzip > $tempdir/ramdisk.gz
+	ramdisksize=$(stat -c "%s" $tempdir/ramdisk.gz)
+	ramdisk="$tempdir/ramdisk.gz"
+	cd $workdir
+fi
+rm -f $3
+
+if [ $dtb_size -gt 0 ]; then
+	$mkbootimg_dtb --kernel $kernel --ramdisk $ramdisk \
+				--base $base_addr --offset $ramdisk_addr \
+				--tags-addr $tags_addr --cmdline "$cmd_line" --dt $dt -o $3
+else
+	$mkbootimg --kernel $kernel --ramdisk $ramdisk \
+			--base $base_addr --ramdiskaddr $ramdisk_addr \
+			--cmdline "$cmd_line" -o $3
+fi
+ramdisksize=$(stat -c "%s" $ramdisk)
+bootsize=$(stat -c "%s" $3)
+pout "Kernel size: $kernel_size, new ramdisk size: $ramdisksize, $(basename $3): $bootsize."
+pout "$(basename $3) has been created."
+clean
+
