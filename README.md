@@ -1,8 +1,7 @@
 mkbootimg_tools
 ===============
 
-Unpack and repack boot.img,support dtb(qcdt dt.img):
------------------------------------
+### Unpack and repack boot.img,support dtb(dt.img):
 		xiaolu@xiaolu-ubuntu64:~/e330s$ mkboot recoveryksuamg5.img tmp
 		Unpack & decompress recoveryksuamg5.img to tmp
 		  kernel         : /home/xiaolu/work/initramfs/s4/e330s/tmp/zImage
@@ -39,8 +38,7 @@ Unpack and repack boot.img,support dtb(qcdt dt.img):
 		recovery.img has been created.
 		cleanup....
 
-Create a dt.img:
------------------------------------  
+### Create a dt.img:
 		xiaolu@xiaolu-ubuntu64:/media/diskd/kernel/SHV-E330S_JB_Opensource/Kernel$ scripts/dtbTool -s 2048 -o arch/arm/boot/dt.img -p scripts/dtc/ arch/arm/boot/
 		DTB combiner:
 		  Input directory: '/media/diskd/kernel/SHV-E330S_JB_Opensource/Kernel/arch/arm/boot/'
