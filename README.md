@@ -1,8 +1,8 @@
 mkbootimg_tools
 ===============
 
-Unpack and repack boot.img,support dtb(qcdt dt.img).
-
+Unpack and repack boot.img,support dtb(qcdt dt.img):
+-----------------------------------
 		xiaolu@xiaolu-ubuntu64:~/e330s$ mkboot recoveryksuamg5.img tmp
 		Unpack & decompress recoveryksuamg5.img to tmp
 		  kernel         : /home/xiaolu/work/initramfs/s4/e330s/tmp/zImage
@@ -38,4 +38,23 @@ Unpack and repack boot.img,support dtb(qcdt dt.img).
 		Kernel size: 6911360, new ramdisk size: 3426199, recovery.img: 11767808.
 		recovery.img has been created.
 		cleanup....
+
+Create a dt.img:
+-----------------------------------  
+		xiaolu@xiaolu-ubuntu64:/media/diskd/kernel/SHV-E330S_JB_Opensource/Kernel$ scripts/dtbTool -s 2048 -o arch/arm/boot/dt.img -p scripts/dtc/ arch/arm/boot/
+		DTB combiner:
+		  Input directory: '/media/diskd/kernel/SHV-E330S_JB_Opensource/Kernel/arch/arm/boot/'
+		  Output file: '/media/diskd/kernel/SHV-E330S_JB_Opensource/Kernel/arch/arm/boot/dt.img'
+		Found file: msm8974-sec-ks01-r03.dtb ... chipset: 2114015745, platform: 3, rev: 0
+		Found file: msm8974-sec-ks01-r07.dtb ... chipset: 2114015745, platform: 7, rev: 0
+		Found file: msm8974-sec-ks01-r06.dtb ... chipset: 2114015745, platform: 6, rev: 0
+		Found file: msm8974-sec-ks01-r04.dtb ... chipset: 2114015745, platform: 4, rev: 0
+		Found file: msm8974-sec-ks01-r11.dtb ... chipset: 2114015745, platform: 11, rev: 0
+		Found file: msm8974-sec-ks01-r02.dtb ... chipset: 2114015745, platform: 2, rev: 0
+		Found file: msm8974-sec-ks01-r00.dtb ... chipset: 2114015745, platform: 0, rev: 0
+		Found file: msm8974-sec-ks01-r05.dtb ... chipset: 2114015745, platform: 5, rev: 0
+		Found file: msm8974-sec-ks01-r01.dtb ... chipset: 2114015745, platform: 1, rev: 0
+		=> Found 9 unique DTB(s)
+
+		Generating master DTB... completed
 
