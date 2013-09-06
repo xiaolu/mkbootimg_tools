@@ -15,8 +15,10 @@
 #boot.img tools
 trap "clean" 2 3 4
 workdir=$(pwd)
-mkbootimg_dtb=./mkbootimg_dtb
-mkbootimg=./mkbootimg
+realpath=$(readlink -f $0)
+basedir=$(dirname $realpath)
+mkbootimg_dtb=$basedir/mkbootimg_dtb
+mkbootimg=$basedir/mkbootimg
 
 C_H1="\033[1;32m"
 C_CLEAR="\033[0;0m"
