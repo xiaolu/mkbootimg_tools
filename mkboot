@@ -43,8 +43,18 @@ if [ $# -lt 2 ] || [ ! -f $1 ] || ([ ! -z $3 ] && [ ! -e $2 ]); then
 fi
 #If only two parameters, unpack boot.img.
 if [ -z $3 ]; then
+	if [ -e $2 ]; then
+		read -p "$2 exists, delete?(N/y)" reply
+		case $reply in
+			y | Y)
+			rm -rf $2
+			;;
+		*)
+			exit
+			;;
+		esac
+	fi
 	tempdir="$(readlink -f $2)"
-	rm -rf $tempdir
 	mkdir -p $tempdir
 	pout "Unpack & decompress $1 to $2"
 else
