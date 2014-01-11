@@ -20,160 +20,189 @@ toolpath=$(readlink -f $0)
 tooldir=$(dirname $toolpath)
 mkbootimg_dtb=$tooldir/mkbootimg_dtb
 mkbootimg_old=$tooldir/mkbootimg
-
-C_OUT="\033[0;0m"
+old_bootimg=true
+C_OUT="\033[0;1m"
 C_ERR="\033[31;1m"
 C_CLEAR="\033[0;0m"
 
 pout() {
-	printf "${C_OUT}${*}${C_CLEAR}\n"
+    printf "${C_OUT}${*}${C_CLEAR}\n"
 }
 perr() {
-	printf "${C_ERR}${*}${C_CLEAR}\n"
+    printf "${C_ERR}${*}${C_CLEAR}\n"
 }
 clean()
 {
-	rm -rf /tmp/mkboot.*
-	pout "..."
-	exit
+    rm -rf /tmp/mkboot.*
+    pout "..."
+    exit
 }
 
 usage()
 {
-	pout "<Unpack and repack boot.img tool>\n"
-	pout "Not enough parameters or parameter error!"
-	pout "unpack boot.img & decompress ramdisk：\n    $(basename $0) [img] [output dir]"
-	pout "    $(basename $0) boot.img boot20130905"
-	pout "Use the unpacked directory repack boot.img(img_info)：\n    $(basename $0) [unpacked dir] [newbootfile]"
-	pout "    $(basename $0) boot20130905 newboot.img"
-	pout "Use the boot.img and new ramdisk repack boot.img：\n    $(basename $0) [img] [ramdisk.gz or ramdisk dir] [newbootfile]"
-	pout "    $(basename $0) boot.img boot20130905/ramdisk newboot.img"
-	clean
+    pout "<Unpack and repack boot.img tool>\n"
+    pout "Not enough parameters or parameter error!"
+    pout "unpack boot.img & decompress ramdisk：\n    $(basename $0) [img] [output dir]"
+    pout "    $(basename $0) boot.img boot20130905"
+    pout "Use the unpacked directory repack boot.img(img_info)：\n    $(basename $0) [unpacked dir] [newbootfile]"
+    pout "    $(basename $0) boot20130905 newboot.img"
+    pout "Use the boot.img and new ramdisk repack boot.img：\n    $(basename $0) [img] [ramdisk.gz or ramdisk dir] [newbootfile]"
+    pout "    $(basename $0) boot.img boot20130905/ramdisk newboot.img"
+    clean
 }
 
 print_info()
 {
-	pout "  kernel         : $kernel"
-	pout "  ramdisk        : $ramdisk"
-	pout "  page_size      : $page_size"
-	pout "  base_addr      : $base_addr"
-	pout "  kernel size    : $kernel_size"
-	pout "  kernel_addr    : $kernel_addr"
-	pout "  ramdisk_size   : $ramdisk_size"
-	pout "  ramdisk_addr   : $ramdisk_addr"
-	[ -z $second_size ] || pout "  second_size    : $second_size"
-	[ -z $second_addr ] || pout "  second_addr    : $second_addr"
-	if [ $dtb_size -gt 0 ]; then
-		pout "  dtb_size       : $dtb_size"
-		pout "  dtb_img        : $dt"
-		pout "  tags_addr      : $tags_addr"
-	fi
-	pout "  cmdline        : $cmd_line"
+    pout "  kernel         : $kernel"
+    pout "  ramdisk        : $ramdisk"
+    pout "  page size      : $page_size"
+    pout "  kernel size    : $kernel_size"
+    pout "  ramdisk size   : $ramdisk_size"
+    [ ! -z $second_size ] && [ $second_size -gt 0 ] && \
+        pout "  second_size    : $second_size"
+    if $old_bootimg ; then
+        pout "  base           : $base_addr"
+        pout "  kernel addr    : $kernel_addr"
+        pout "  ramdisk addr   : $ramdisk_addr"
+        [ -z $second_addr ] || pout "  second_addr    : $second_addr"
+        pout "  tags addr      : $tags_addr"
+    else
+        pout "  dtb size       : $dtb_size"
+        pout "  base           : $base_addr"
+        pout "  kernel offset  : $kernel_offset"
+        pout "  ramdisk offset : $ramdisk_offset"
+        [ -z $second_offset ] || pout "  second_offset  : $second_offset"
+        pout "  tags offset    : $tags_offset"
+        pout "  dtb img        : $dt"
+    fi
+    pout "  cmd line       : $cmd_line"
 }
 
 mkboot_img()
 {
-	error=0
-	if [ $dtb_size -gt 0 ]; then
-		$mkbootimg_dtb --kernel $kernel --ramdisk $ramdisk \
-					--base $base_addr --offset $ramdisk_addr \
-					--tags-addr $tags_addr --cmdline "$cmd_line" \
-					--dt $dt -o $1 || error=1
-	else
-		$mkbootimg_old --kernel $kernel --ramdisk $ramdisk \
-				--base $base_addr --ramdiskaddr $ramdisk_addr \
-				--cmdline "$cmd_line" -o $1 || error=1
-	fi
-	[ $error -eq 1 ] && return $error
-	ramdisksize=$(stat -c "%s" $ramdisk)
-	bootsize=$(stat -c "%s" $1)
-	pout "Kernel size: $kernel_size, new ramdisk size: $ramdisksize, $(basename $1): $bootsize."
-	pout "$(basename $1) has been created."
+    error=0
+    if $old_bootimg ; then
+        $mkbootimg_old --kernel $kernel --ramdisk $ramdisk \
+                --base $base_addr --ramdiskaddr $ramdisk_addr \
+                --cmdline "$cmd_line" -o $1 || error=1
+    else
+        $mkbootimg_dtb --kernel $kernel --ramdisk $ramdisk \
+                    --base $base_addr --ramdisk_offset $ramdisk_offset \
+                    --tags_offset $tags_offset --cmdline "$cmd_line" \
+                    --dt $dt -o $1 || error=1
+    fi
+    [ $error -eq 1 ] && return $error
+    ramdisk_size=$(stat -c "%s" $ramdisk)
+    boot_size=$(stat -c "%s" $1)
+    pout "Kernel size: $kernel_size, new ramdisk size: $ramdisk_size, $(basename $1): $boot_size."
+    pout "$(basename $1) has been created."
 }
 
 #decide action
 [ $# -lt 2 ] || [ $# -gt 3 ] && usage
 if [ $# -eq 2 ] && [ -d $1 ]; then
-	mkboot_from_dir=1
+    mkboot_from_dir=1
 elif [ $# -eq 2 ] && [ -s $1 ]; then
-	split_boot_to_dir=1
+    split_boot_to_dir=1
 elif [ $# -eq 3 ] && [ -s $1 ] && [ -e $2 ]; then
-	mkboot_from_img_dir=1
+    mkboot_from_img_dir=1
 else
-	usage
+    usage
 fi
 
 #mkboot_from_dir, img_info
 if [ ! -z $mkboot_from_dir ]; then
-	pout "mkbootimg from $1/img_info."
-	unpacked_dir=$(readlink -f $1)
-	new_img=$(readlink -f $2)
-	cd $unpacked_dir
-	if [ ! -s img_info ]; then
-		pout "not found img_info file! can't rebuild img."
-		clean
-	fi 
-	eval $(cat img_info)
-	if [ -z $kernel ] || [ -z $ramdisk ] || [ -z $ramdisk_addr ] || [ -z $base_addr ]; then
-		pout "img_info file have not enough parameters."
-		clean
-	fi
-	kernel=$(readlink -f $kernel)
-	if [ -d $ramdisk ]; then
-		cd $ramdisk
-		find . | cpio -R 0:0 -H newc -o 2>/dev/null | gzip > $unpacked_dir/new_ramdisk.gz
-		#mkbootfs $ramdisk | gzip > $unpacked_dir/new_ramdisk.gz
-		ramdisk=$unpacked_dir/new_ramdisk.gz
-	fi
-	cd $unpacked_dir
-	print_info
-	rm -f $new_img
-	mkboot_img $new_img || perr "Make boot.img Error! pls check img_info file."
-	rm -f new_ramdisk.gz
-	clean
+    pout "mkbootimg from $1/img_info."
+    unpacked_dir=$(readlink -f $1)
+    new_img=$(readlink -f $2)
+    cd $unpacked_dir
+    if [ ! -s img_info ]; then
+        pout "not found img_info file! can't rebuild img."
+        clean
+    fi 
+    eval $(cat img_info)
+    if [ -z $kernel ] || [ -z $ramdisk ] || [ -z $base_addr ]; then
+        pout "img_info file have not enough parameters."
+        clean
+    fi
+    if [ ! -z $dt ]; then
+        old_bootimg=false
+        [ -z $kernel_offset ] && kernel_offset=$kernel_addr
+        [ -z $ramdisk_offset ] && ramdisk_offset=$ramdisk_addr
+        [ -z $tags_offset ] && tags_offset=$tags_addr
+    fi
+    kernel=$(readlink -f $kernel)
+    if [ -d $ramdisk ]; then
+        cd $ramdisk
+        find . | cpio -R 0:0 -H newc -o 2>/dev/null | gzip > $unpacked_dir/new_ramdisk.gz
+        #find . | cpio -R 0:0 -H newc -o 2>/dev/null > $unpacked_dir/new_ramdisk.gz
+        #mkbootfs $ramdisk > $unpacked_dir/new_ramdisk.gz
+        ramdisk=$unpacked_dir/new_ramdisk.gz
+        ramdisk_size=$(stat -c "%s" $ramdisk)
+    fi
+    cd $unpacked_dir
+    print_info
+    rm -f $new_img
+    mkboot_img $new_img || perr "Make boot.img Error! pls check img_info file."
+    rm -f new_ramdisk.gz
+    clean
 fi
 
-#split_boot_to_dir.
 if [ ! -z $split_boot_to_dir ]; then
-	if [ -e $2 ]; then
-		read -p "$2 exists, delete?(N/y)" reply
-		case $reply in
-			y | Y)
-			rm -rf $2
-			;;
-		*)
-			exit
-			;;
-		esac
-	fi
-	tempdir="$(readlink -f $2)"
-	mkdir -p $tempdir
-	pout "Unpack & decompress $1 to $2"
+    #split boot.img to dir.
+    if [ -e $2 ]; then
+        read -p "$2 exists, delete?(N/y)" reply
+        case $reply in
+            y | Y)
+            rm -rf $2
+            ;;
+        *)
+            exit
+            ;;
+        esac
+    fi
+    tempdir="$(readlink -f $2)"
+    mkdir -p $tempdir
+    pout "Unpack & decompress $1 to $2"
 else
-	tempdir=$(mktemp -d /tmp/mkboot.XXXX)
-	pout "Repack $1 & ramdisk $2 to $3"
+    #split boot.img to tmp dir.
+    tempdir=$(mktemp -d /tmp/mkboot.XXXX)
+    pout "Repack $1 & ramdisk $2 to $3"
 fi
 
-
+#get boot.img info
 cp -f $1 $tempdir/
 cd $tempdir
 bootimg=$(basename $1)
 offset=$(grep -abo ANDROID! $bootimg | cut -f 1 -d :)
 [ -z $offset ] && clean
 if [ $offset -gt 0 ]; then
-		dd if=$bootimg of=bootimg bs=$offset skip=1 2>/dev/null
-		bootimg=bootimg
+        dd if=$bootimg of=bootimg bs=$offset skip=1 2>/dev/null
+        bootimg=bootimg
+fi
+
+dtb_size=$(od -A n -D -j 40 -N 4 $bootimg | sed 's/ //g')
+kernel_v=0x$(od -A n -H -j 12 -N 4 $bootimg | sed 's/ //g')
+ramdisk_v=0x$(od -A n -H -j 20 -N 4 $bootimg | sed 's/ //g')
+second_v=0x$(od -A n -H -j 28 -N 4 $bootimg | sed 's/ //g')
+tags_v=0x$(od -A n -H -j 32 -N 4 $bootimg | sed 's/ //g')
+if [ $dtb_size -gt 0 ]; then
+    old_bootimg=false
+    kernel_offset=$kernel_v
+    ramdisk_offset=$ramdisk_v
+    second_offset=$second_v
+    tags_offset=$tags_v
+else
+    kernel_addr=$kernel_v
+    ramdisk_addr=$ramdisk_v
+    second_addr=$second_v
+    tags_addr=$tags_v
 fi
 kernel_size=$(od -A n -D -j 8 -N 4 $bootimg | sed 's/ //g')
-kernel_addr=0x$(od -A n -H -j 12 -N 4 $bootimg | sed 's/ //g')
 base_addr=0x$(od -A n -h -j 14 -N 2 $bootimg | sed 's/ //g')0000
 ramdisk_size=$(od -A n -D -j 16 -N 4 $bootimg | sed 's/ //g')
-ramdisk_addr=0x$(od -A n -H -j 20 -N 4 $bootimg | sed 's/ //g')
 second_size=$(od -A n -D -j 24 -N 4 $bootimg | sed 's/ //g')
-second_addr=0x$(od -A n -H -j 28 -N 4 $bootimg | sed 's/ //g')
-tags_addr=0x$(od -A n -H -j 32 -N 4 $bootimg | sed 's/ //g')
 page_size=$(od -A n -D -j 36 -N 4 $bootimg | sed 's/ //g')
-dtb_size=$(od -A n -D -j 40 -N 4 $bootimg | sed 's/ //g')
 cmd_line=$(od -A n --strings -j 64 -N 512 $bootimg)
 
 k_count=$(((kernel_size+page_size-1)/page_size))
@@ -186,15 +215,15 @@ s_offset=$((r_offset+r_count))
 d_offset=$((s_offset+s_count))
 
 dd if=$bootimg of=zImage_tmp bs=$page_size skip=$k_offset count=$k_count 2>/dev/null
-dd if=zImage_tmp of=zImage bs=$kernel_size count=1	2>/dev/null
+dd if=zImage_tmp of=zImage bs=$kernel_size count=1    2>/dev/null
 if [ ! -z $split_boot_to_dir ]; then
-	dd if=$bootimg of=ramdisk_tmp bs=$page_size skip=$r_offset count=$r_count 2>/dev/null
-	dd if=ramdisk_tmp of=ramdisk.gz bs=$ramdisk_size count=1	2>/dev/null
+    dd if=$bootimg of=ramdisk_tmp bs=$page_size skip=$r_offset count=$r_count 2>/dev/null
+    dd if=ramdisk_tmp of=ramdisk.gz bs=$ramdisk_size count=1    2>/dev/null
 fi
 if [ $dtb_size -gt 0 ]; then
-	dd if=$bootimg of=dt.img_tmp bs=$page_size skip=$d_offset count=$d_count 2>/dev/null
-	dd if=dt.img_tmp of=dt.img bs=$dtb_size count=1	2>/dev/null
-	dt="$tempdir/dt.img"
+    dd if=$bootimg of=dt.img_tmp bs=$page_size skip=$d_offset count=$d_count 2>/dev/null
+    dd if=dt.img_tmp of=dt.img bs=$dtb_size count=1    2>/dev/null
+    dt="$tempdir/dt.img"
 fi
 rm -f *_tmp $(basename $1) $bootimg
 
@@ -204,30 +233,36 @@ ramdisk=$tempdir/ramdisk.gz
 #print boot.img info
 print_info
 
-#decompression ramdisk.gz
+#write info to img_info,decompression ramdisk.gz
 if [ ! -z $split_boot_to_dir ]; then
-	if [ ! -z $dt ]; then
-		dt=$(basename $dt)
-	fi
-	printf "kernel=$(basename $kernel)\nramdisk=ramdisk\npage_size=$page_size\nbase_addr=$base_addr\n\
-kernel_size=$kernel_size\nkernel_addr=$kernel_addr\nramdisk_size=$ramdisk_size\nramdisk_addr=$ramdisk_addr\n\
-dt=$dt\ndtb_size=$dtb_size\ntags_addr=$tags_addr\ncmd_line=\"$cmd_line\"\n" > img_info
-	mkdir ramdisk
-	cd ramdisk
-	gzip -d -c ../ramdisk.gz | cpio -i -d -m  --no-absolute-filenames 2>/dev/null
-	#Unpack Finish to exit.
-	pout "Unpack completed."
-	exit
+    if $old_bootimg ; then
+        printf "kernel=$(basename $kernel)\nramdisk=ramdisk\npage_size=$page_size\n\
+kernel_size=$kernel_size\nramdisk_size=$ramdisk_size\nbase_addr=$base_addr\nkernel_addr=$kernel_addr\n\
+ramdisk_addr=$ramdisk_addr\ntags_addr=$tags_addr\ncmd_line=\"$cmd_line\"\n" > img_info
+    else
+        dt=$(basename $dt)
+        printf "kernel=$(basename $kernel)\nramdisk=ramdisk\ndt=$dt\npage_size=$page_size\n\
+kernel_size=$kernel_size\nramdisk_size=$ramdisk_size\ndtb_size=$dtb_size\nbase_addr=$base_addr\nkernel_offset=$kernel_offset\n\
+ramdisk_offset=$ramdisk_offset\ntags_offset=$tags_offset\ncmd_line=\"$cmd_line\"\n" > img_info
+    fi
+    mkdir ramdisk
+    cd ramdisk
+    gzip -d -c ../ramdisk.gz | cpio -i -d -m  --no-absolute-filenames 2>/dev/null
+    #Unpack Finish to exit.
+    pout "Unpack completed."
+    exit
 fi
+
+#继续
 cd $workdir
 ramdisk=$2
 #if ramdisk is a directory,create ramdisk.gz
 if [ -d $ramdisk ]; then
-	cd $ramdisk
-	find . | cpio -R 0:0 -H newc -o 2>/dev/null | gzip > $tempdir/ramdisk.gz
-	ramdisksize=$(stat -c "%s" $tempdir/ramdisk.gz)
-	ramdisk="$tempdir/ramdisk.gz"
-	cd $workdir
+    cd $ramdisk
+    find . | cpio -R 0:0 -H newc -o 2>/dev/null | gzip > $tempdir/ramdisk.gz
+    ramdisksize=$(stat -c "%s" $tempdir/ramdisk.gz)
+    ramdisk="$tempdir/ramdisk.gz"
+    cd $workdir
 fi
 rm -f $3
 mkboot_img $3 || perr "Make boot.img Error! pls check."
