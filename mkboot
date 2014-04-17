@@ -250,9 +250,24 @@ ramdisk_offset=$ramdisk_offset\ntags_offset=$tags_offset\ncmd_line=\"$cmd_line\"
 
     gzip -t ../ramdisk.gz
     if [ $? -gt 0 ]; then
-		$tooldir/lz4 -d ../ramdisk.gz ../ramdisk.cpio
-        cpio -i -d -m  --no-absolute-filenames 2>/dev/null < ../ramdisk.cpio
+
+        lzma -t ../ramdisk.gz
+        if [ $? -gt 0 ]; then
+            #try lz4
+            $tooldir/lz4 -d ../ramdisk.gz ../ramdisk.cpio
+            if [ $? -gt 0 ]; then
+               pout "ramdisk is unknown format,can't unpack ramdisk"
+               rm ../ramdisk.cpio
+            else
+                pout "ramdisk is lz4 format."
+                cpio -i -d -m  --no-absolute-filenames 2>/dev/null < ../ramdisk.cpio
+            fi
+        else
+            pout "ramdisk is lzma format."
+            lzma -d -c ../ramdisk.gz | cpio -i -d -m  --no-absolute-filenames 2>/dev/null
+	    fi
     else
+        pout "ramdisk is gzip format."
         gzip -d -c ../ramdisk.gz | cpio -i -d -m  --no-absolute-filenames 2>/dev/null
     fi
     #Unpack Finish to exit.
