@@ -57,3 +57,8 @@ mkbootimg_tools
 
 		Generating master DTB... completed
 
+
+### dtbToolCM support dt-tag & dtb v2(https://github.com/CyanogenMod/android_device_qcom_common/tree/cm-11.0/dtbtool):
+
+ 	dtbToolCM -s 2048 -d "htc,project-id = <" -o arch/arm/boot/dt.img -p scripts/dtc/ arch/arm/boot/
+
