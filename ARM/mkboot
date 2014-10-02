@@ -153,7 +153,7 @@ if [ -e $2 ]; then
 fi
 tempdir=$2
 mkdir -p "$tempdir"
-pout "Unpack & decompress $1 to $2"
+pout "\nUnpack & decompress $1 to $2"
 
 #get boot.img info
 cp -f $1 $tempdir/
@@ -184,11 +184,84 @@ ramdisk_offset=$((ramdisk_addr-base_addr))
 second_offset=$((second_addr-base_addr))
 tags_offset=$((tags_addr-base_addr))
 
+#########################################################
+
+non_standard_base=$((tags_addr-0x00000100)) # Need this to get the TRUE Base Address
+non_standard_base_addr=$(printf "0x%08x" $non_standard_base)
+base_addr_verify=$(printf "0x%08x" $base_addr)
 base_addr=$(printf "0x%08x" $base_addr)
-kernel_offset=$(printf "0x%08x" $kernel_offset)
-ramdisk_offset=$(printf "0x%08x" $ramdisk_offset)
-second_offset=$(printf "0x%08x" $second_offset)
-tags_offset=$(printf "0x%08x" $tags_offset)
+
+if [ $base_addr == $non_standard_base ]; then
+	base_addr=$(printf "0x%08x" $base_addr)
+else
+	base_addr=$(printf "0x%08x" $non_standard_base_addr)
+fi
+
+# Accurate offsets used on images with non standard mkbootimg.c
+kernel_offset_ns=$((kernel_addr-non_standard_base))
+ramdisk_offset_ns=$((ramdisk_addr-non_standard_base))
+second_offset_ns=$((second_addr-non_standard_base))
+tags_offset_ns=$((tags_addr-non_standard_base))
+
+# Do the Offsets match with the Base Address for standard mkbootimg.c?
+kernel_offset_s=$((kernel_addr-0x00008000))
+ramdisk_offset_s=$((ramdisk_addr-0x01000000))
+second_offset_s=$((second_addr-0x00f00000))
+tags_offset_s=$((tags_addr-0x00000100))
+
+if [ $non_standard_base -eq $kernel_offset_s ]; then
+	kernel_offset=$(printf "0x%08x" $kernel_offset)
+else
+	kernel_offset_ns=$(printf "0x%08x" $kernel_offset_ns)
+	kernel_offset=$(printf "0x%08x" $kernel_offset_ns)
+	kernel_offset_warning=$kernel_offset_ns
+fi
+
+if [ $non_standard_base -eq $ramdisk_offset_s ]; then
+	ramdisk_offset=$(printf "0x%08x" $ramdisk_offset)
+else
+	ramdisk_offset_ns=$(printf "0x%08x" $ramdisk_offset_ns)
+	ramdisk_offset=$(printf "0x%08x" $ramdisk_offset_ns)
+	ramdisk_offset_warning=$ramdisk_offset_ns
+fi
+
+if [ $non_standard_base -eq $second_offset_s ]; then
+	second_offset=$(printf "0x%08x" $second_offset)
+else
+	second_offset_ns=$(printf "0x%08x" $second_offset_ns)
+	second_offset=$(printf "0x%08x" $second_offset_ns)
+	second_offset_warning=$second_offset_ns
+fi
+
+if [ $base_addr_verify != $non_standard_base_addr ]; then
+	base_warning=$non_standard_base_addr
+fi
+
+tags_offset=$(printf "0x%08x" $tags_offset_ns)
+
+# Below are the known offsets for non standard mkbootimg.c
+if [[ ! -z $kernel_offset_warning ]] || [[ ! -z $ramdisk_offset_warning ]] || [[ ! -z $second_offset_warning ]]; then
+	pout "\n****** WARNING ******* WARNING ******* WARNING ******\n"
+	pout "This image is built using NON-standard mkbootimg!"
+fi
+if [ ! -z $base_warning ]; then
+	pout "BASE is $base_warning"
+fi
+if [ ! -z $kernel_offset_warning ]; then
+	pout "KERNEL_OFFSET is $kernel_offset_ns"
+fi
+if [ ! -z $ramdisk_offset_warning ]; then
+	pout "RAMDISK_OFFSET is $ramdisk_offset_ns"
+fi
+if [ ! -z $second_offset_warning ]; then
+	pout "SECOND_OFFSET is $second_offset_ns"
+fi
+if [[ ! -z $kernel_offset_warning ]] || [[ ! -z $ramdisk_offset_warning ]] || [[ ! -z $second_offset_warning ]]; then
+	pout "\nYou can modify mkbootimg.c with the above value(s)"
+	pout "\n****** WARNING ******* WARNING ******* WARNING ******"
+fi
+
+#########################################################
 
 k_count=$(((kernel_size+page_size-1)/page_size))
 r_count=$(((ramdisk_size+page_size-1)/page_size))
@@ -237,22 +310,23 @@ if [ $? -gt 0 ]; then
         #try lz4
         $lz4 -d ../ramdisk.gz ../ramdisk.cpio
         if [ $? -gt 0 ]; then
-            pout "ramdisk is unknown format,can't unpack ramdisk"
+            pout "\nramdisk is unknown format,can't unpack ramdisk"
     	    busybox rm ../ramdisk.cpio
         else
-            pout "ramdisk is lz4 format."
+            pout "\nramdisk is lz4 format."
             $cpio -i -d -m --no-absolute-filenames 2>/dev/null < ../ramdisk.cpio
         fi
     else
-        pout "ramdisk is lzma format."
+        pout "\nramdisk is lzma format."
         $lzma -d -c ../ramdisk.gz | $cpio -i -d -m  --no-absolute-filenames 2>/dev/null
     fi
 else
-    pout "ramdisk is gzip format."
+    pout "\nramdisk is gzip format."
     $gzip -d -c ../ramdisk.gz | $cpio -i -d -m --no-absolute-filenames 2>/dev/null
 fi
 #Unpack Finish to exit.
-pout "Unpack completed."
+pout "Unpack completed.\n"
 exit
+
 
 
