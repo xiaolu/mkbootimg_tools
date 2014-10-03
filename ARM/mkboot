@@ -44,7 +44,7 @@ perr() {
 clean()
 {
     busybox rm -rf /tmp/mkboot.*
-    pout "..."
+    #pout "..."
     exit
 }
 
@@ -92,8 +92,8 @@ mkboot_img()
     [ $error -eq 1 ] && return $error
     ramdisk_size=$(stat -c "%s" $ramdisk)
     boot_size=$(stat -c "%s" $new_img)
-    pout "Kernel size: $kernel_size, new ramdisk size: $ramdisk_size, $(basename $new_img): $boot_size."
-    pout "$(basename $new_img) has been created."
+    pout "\nKernel size: $kernel_size, new ramdisk size: $ramdisk_size, $(basename $new_img): $boot_size."
+    pout "\n$(basename $new_img) has been created.\n"
 }
 
 #decide action
@@ -108,7 +108,7 @@ fi
 
 #mkboot_from_dir, img_info
 if [ ! -z $mkboot_from_dir ]; then
-    pout "mkbootimg from $1/img_info."
+    pout "\nmkbootimg from $1/img_info.\n"
     unpacked_dir=$1
     new_img=$2
     cd $unpacked_dir
@@ -123,11 +123,30 @@ if [ ! -z $mkboot_from_dir ]; then
     fi
     [ -z $dtb_size ] && dtb_size=0
     if [ -d $ramdisk ]; then
-        #cd $ramdisk
-        #find . | $cpio -R 0:0 -H newc -o 2>/dev/null | $gzip > $unpacked_dir/new_ramdisk.gz
-        $mkbootfs $ramdisk | $gzip > new_ramdisk.gz
-        ramdisk=new_ramdisk.gz
-        ramdisk_size=$(stat -c "%s" $ramdisk)
+		$gzip -t ./ramdisk.gz 2>/dev/null
+		if [ $? -gt 0 ]; then
+    		$lzma -t ./ramdisk.gz 2>/dev/nulll
+    		if [ $? -gt 0 ]; then
+        		#try lz4
+        		$lz4 -d ./ramdisk.gz ../ramdisk.cpio 2>/dev/null
+        		if [ $? -gt 0 ]; then
+            	pout "\nRamdisk is unknown format. Can't 'repack ramdisk."
+    	    		exit 0
+        		else
+        			$mkbootfs $ramdisk | $lz4 > new_ramdisk.lz4
+        			ramdisk=new_ramdisk.lz4
+        			ramdisk_size=$(stat -c "%s" $ramdisk)
+        		fi
+    		else
+        		$mkbootfs $ramdisk | $lzma > new_ramdisk.lzma
+        		ramdisk=new_ramdisk.lzma
+        		ramdisk_size=$(stat -c "%s" $ramdisk)
+    		fi
+		else
+        	$mkbootfs $ramdisk | $gzip > new_ramdisk.gz
+        	ramdisk=new_ramdisk.gz
+        	ramdisk_size=$(stat -c "%s" $ramdisk)
+		fi
     fi
     #cd $unpacked_dir
     print_info
@@ -153,7 +172,7 @@ if [ -e $2 ]; then
 fi
 tempdir=$2
 mkdir -p "$tempdir"
-pout "\nUnpack & decompress $1 to $2"
+pout "\nUnpack & decompress $1 to $2\n"
 
 #get boot.img info
 cp -f $1 $tempdir/
@@ -241,8 +260,8 @@ tags_offset=$(printf "0x%08x" $tags_offset_ns)
 
 # Below are the known offsets for non standard mkbootimg.c
 if [[ ! -z $kernel_offset_warning ]] || [[ ! -z $ramdisk_offset_warning ]] || [[ ! -z $second_offset_warning ]]; then
-	pout "\n****** WARNING ******* WARNING ******* WARNING ******\n"
-	pout "This image is built using NON-standard mkbootimg!"
+	pout "****** WARNING ******* WARNING ******* WARNING ******\n"
+	pout "This image is built using NON-standard mkbootimg!\n"
 fi
 if [ ! -z $base_warning ]; then
 	pout "BASE is $base_warning"
@@ -258,7 +277,7 @@ if [ ! -z $second_offset_warning ]; then
 fi
 if [[ ! -z $kernel_offset_warning ]] || [[ ! -z $ramdisk_offset_warning ]] || [[ ! -z $second_offset_warning ]]; then
 	pout "\nYou can modify mkbootimg.c with the above value(s)"
-	pout "\n****** WARNING ******* WARNING ******* WARNING ******"
+	pout "\n****** WARNING ******* WARNING ******* WARNING ******\n"
 fi
 
 #########################################################
@@ -302,15 +321,14 @@ ramdisk_offset=$ramdisk_offset\ntags_offset=$tags_offset\ncmd_line=\"$cmd_line\"
 mkdir ramdisk
 cd ramdisk
 
-$gzip -t ../ramdisk.gz
+$gzip -t ../ramdisk.gz 2>/dev/null
 if [ $? -gt 0 ]; then
-
-    $lzma -t ../ramdisk.gz
+    $lzma -t ../ramdisk.gz 2>/dev/null
     if [ $? -gt 0 ]; then
         #try lz4
-        $lz4 -d ../ramdisk.gz ../ramdisk.cpio
+        $lz4 -d ../ramdisk.gz ../ramdisk.cpio 2>/dev/null
         if [ $? -gt 0 ]; then
-            pout "\nramdisk is unknown format,can't unpack ramdisk"
+            pout "\nRamdisk is unknown format. Can't unpack ramdisk."
     	    busybox rm ../ramdisk.cpio
         else
             pout "\nramdisk is lz4 format."
