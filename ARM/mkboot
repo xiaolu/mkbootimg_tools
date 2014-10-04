@@ -13,8 +13,8 @@
 # limitations under the License.
 #
 #boot.img tool
-#by xiaolu
-#modified by Modding.MyMind
+#original author: xiaolu
+#heavily modified by: Modding.MyMind
 
 #set -x # for debugging
 
@@ -28,8 +28,11 @@ od=$tooldir/od
 gzip=$tooldir/gzip
 lz4=$tooldir/lz4
 lzma=$tooldir/lzma
+xz=$tooldir/xz # Also used for lzma compression
 grep=$tooldir/grep
 cpio=$tooldir/cpio
+magic=$tooldir/magic
+file=$tooldir/file
 old_bootimg=true
 C_OUT="\033[0;1m"
 C_ERR="\033[31;1m"
@@ -123,30 +126,52 @@ if [ ! -z $mkboot_from_dir ]; then
     fi
     [ -z $dtb_size ] && dtb_size=0
     if [ -d $ramdisk ]; then
-		$gzip -t ./ramdisk.gz 2>/dev/null
-		if [ $? -gt 0 ]; then
-    		$lzma -t ./ramdisk.gz 2>/dev/nulll
-    		if [ $? -gt 0 ]; then
-        		#try lz4
-        		$lz4 -d ./ramdisk.gz ../ramdisk.cpio 2>/dev/null
-        		if [ $? -gt 0 ]; then
-            	pout "\nRamdisk is unknown format. Can't 'repack ramdisk."
-    	    		exit 0
-        		else
-        			$mkbootfs $ramdisk | $lz4 > new_ramdisk.lz4
-        			ramdisk=new_ramdisk.lz4
-        			ramdisk_size=$(stat -c "%s" $ramdisk)
-        		fi
-    		else
-        		$mkbootfs $ramdisk | $lzma > new_ramdisk.lzma
-        		ramdisk=new_ramdisk.lzma
-        		ramdisk_size=$(stat -c "%s" $ramdisk)
-    		fi
+	compression_type=$($file -m $magic ./ramdisk.* | cut -d: -f2 | cut -d" " -f2)
+	
+	compression_ext=$compression_type
+	case $compression_type in
+		gzip) compression_warning=$compression_type; compression_repack=$gzip;;
+		xz) compression_warning=$compression_type; compression_repack="$xz -1 --check=crc32";;
+		lzma) compression_warning=$compression_type; compression_repack="$xz --format=lzma";;
+		lz4) compression_warning=$compression_type; compression_repack="$lz4 -l";;
+	esac;
+	if [ -z $compression_warning ]; then
+		pout "\n****** HAZARD ******* HAZARD ******* HAZARD ******"
+		pout "\nRamdisk is $compression_type format. Can't repack ramdisk."
+		pout "This tool currently does not support $compression_type."
+		pout "\n****** HAZARD ******* HAZARD ******* HAZARD ******\n"
+		exit
+	fi	
+	if [ $compression_type == "gzip" ]; then
+		if [ $compression_type == "lzma" ]; then
+			if [ $compression_type == "lz4" ]; then
+				if [ $compression_type == "xz" ]; then
+					pout "\nRamdisk is unknown format. Can't repack ramdisk."
+					exit 0
+				else
+					# XZ
+					$mkbootfs $ramdisk | $compression_repack > new_ramdisk.$compression_ext
+					ramdisk=new_ramdisk.$compression_ext
+					ramdisk_size=$(stat -c "%s" $ramdisk)
+				fi
+			else
+				# LZ4
+				$mkbootfs $ramdisk | $compression_repack > new_ramdisk.$compression_ext
+				ramdisk=new_ramdisk.$compression_ext
+				ramdisk_size=$(stat -c "%s" $ramdisk)
+			fi
 		else
-        	$mkbootfs $ramdisk | $gzip > new_ramdisk.gz
-        	ramdisk=new_ramdisk.gz
-        	ramdisk_size=$(stat -c "%s" $ramdisk)
+			# LZMA using xz binary
+			$mkbootfs $ramdisk | $compression_repack > new_ramdisk.$compression_ext
+			ramdisk=new_ramdisk.$compression_ext
+			ramdisk_size=$(stat -c "%s" $ramdisk)
 		fi
+	else
+		# GZIP
+		$mkbootfs $ramdisk | $compression_repack > new_ramdisk.$compression_ext
+		ramdisk=new_ramdisk.$compression_ext
+		ramdisk_size=$(stat -c "%s" $ramdisk)
+	fi
     fi
     #cd $unpacked_dir
     print_info
@@ -321,30 +346,37 @@ ramdisk_offset=$ramdisk_offset\ntags_offset=$tags_offset\ncmd_line=\"$cmd_line\"
 mkdir ramdisk
 cd ramdisk
 
-$gzip -t ../ramdisk.gz 2>/dev/null
-if [ $? -gt 0 ]; then
-    $lzma -t ../ramdisk.gz 2>/dev/null
-    if [ $? -gt 0 ]; then
-        #try lz4
-        $lz4 -d ../ramdisk.gz ../ramdisk.cpio 2>/dev/null
-        if [ $? -gt 0 ]; then
-            pout "\nRamdisk is unknown format. Can't unpack ramdisk."
-    	    busybox rm ../ramdisk.cpio
-        else
-            pout "\nramdisk is lz4 format."
-            $cpio -i -d -m --no-absolute-filenames 2>/dev/null < ../ramdisk.cpio
-        fi
-    else
-        pout "\nramdisk is lzma format."
-        $lzma -d -c ../ramdisk.gz | $cpio -i -d -m  --no-absolute-filenames 2>/dev/null
-    fi
-else
-    pout "\nramdisk is gzip format."
-    $gzip -d -c ../ramdisk.gz | $cpio -i -d -m --no-absolute-filenames 2>/dev/null
+compression_type=$($file -m $magic ../ramdisk.gz | cut -d: -f2 | cut -d" " -f2)
+compression_warning=$compression_type
+
+case $compression_type in
+  gzip) compression_type=$gzip; compression_ext=gz;;
+  xz) compression_type=$xz; compression_ext=xz;;
+  lzma) compression_type=$lzma; compression_ext=lzma;;
+  lz4) compression_ext=lz4; decomp_ramdisk="$lz4 -d"; extra="< ../ramdisk.cpio";;
+esac;
+
+if [ $compression_ext != "lz4" ]; then
+decomp_ramdisk="$compression_type -d -c"
 fi
+decomp_ramdisk2="$cpio -i -d -m --no-absolute-filenames"
+
+if [ -z $compression_ext ]; then
+	pout "\n****** HAZARD ******* HAZARD ******* HAZARD ******"
+	pout "\nRamdisk is $compression_warning format. Can't unpack ramdisk."
+	pout "This tool currently does not support $compression_warning."
+	pout "\n****** HAZARD ******* HAZARD ******* HAZARD ******\n"
+	exit
+fi
+
+mv ../ramdisk.gz ../ramdisk.$compression_ext # This is simply to remind the user if they view the folder afterwards
+pout "\nRamdisk is $compression_warning format."
+$decomp_ramdisk "../ramdisk.$compression_ext" | $decomp_ramdisk2 $extra
+
 #Unpack Finish to exit.
 pout "Unpack completed.\n"
 exit
+
 
 
 
