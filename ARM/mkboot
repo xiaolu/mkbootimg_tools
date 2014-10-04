@@ -24,6 +24,7 @@ toolpath=$(readlink -f $0)
 tooldir=$(dirname $toolpath)
 mkbootimg=$tooldir/mkbootimg
 mkbootfs=$tooldir/mkbootfs
+busybox=$(command -v busybox)
 od=$tooldir/od
 gzip=$tooldir/gzip
 lz4=$tooldir/lz4
@@ -37,29 +38,34 @@ old_bootimg=true
 C_OUT="\033[0;1m"
 C_ERR="\033[31;1m"
 C_CLEAR="\033[0;0m"
-
+	
 pout() {
-    printf "${C_OUT}${*}${C_CLEAR}\n"
+    $busybox printf "${C_OUT}${*}${C_CLEAR}\n"
 }
 perr() {
-    printf "${C_ERR}${*}${C_CLEAR}\n"
+    $busybox printf "${C_ERR}${*}${C_CLEAR}\n"
 }
 clean()
 {
-    busybox rm -rf /tmp/mkboot.*
+    $busybox rm -rf /tmp/mkboot.*
     #pout "..."
     exit
 }
+
+# Check for busybox
+if [ -z $busybox ]; then
+	clear; pout "Busybox is NOT installed!\nThis may cause issues with the script!"
+fi
 
 usage()
 {
     pout "<Unpack and repack boot.img tool>"
     pout "----------------------------------------------------------------------"
     pout "Not enough parameters or parameter error!"
-    pout "unpack boot.img & decompress ramdisk：\n    $(basename $0) [img] [output dir]"
-    pout "    $(basename $0) boot.img boot20130905"
-    pout "Use the unpacked directory repack boot.img(img_info)：\n    $(basename $0) [unpacked dir] [newbootfile]"
-    pout "    $(basename $0) boot20130905 newboot.img"
+    pout "unpack boot.img & decompress ramdisk：\n    $($busybox basename $0) [img] [output dir]"
+    pout "    $($busybox basename $0) boot.img boot20130905"
+    pout "Use the unpacked directory repack boot.img(img_info)：\n    $($busybox basename $0) [unpacked dir] [newbootfile]"
+    pout "    $($busybox basename $0) boot20130905 newboot.img"
     clean
 }
 
@@ -93,10 +99,10 @@ mkboot_img()
         --tags_offset $tags_offset --cmdline "$cmd_line" \
         --pagesize $page_size $dtb -o $new_img 2>/dev/null || error=1
     [ $error -eq 1 ] && return $error
-    ramdisk_size=$(stat -c "%s" $ramdisk)
-    boot_size=$(stat -c "%s" $new_img)
-    pout "\nKernel size: $kernel_size, new ramdisk size: $ramdisk_size, $(basename $new_img): $boot_size."
-    pout "\n$(basename $new_img) has been created.\n"
+    ramdisk_size=$($busybox stat -c "%s" $ramdisk)
+    boot_size=$($busybox stat -c "%s" $new_img)
+    pout "\nKernel size: $kernel_size, new ramdisk size: $ramdisk_size, $($busybox basename $new_img): $boot_size."
+    pout "\n$($busybox basename $new_img) has been created.\n"
 }
 
 #decide action
@@ -116,17 +122,17 @@ if [ ! -z $mkboot_from_dir ]; then
     new_img=$2
     cd $unpacked_dir
     if [ ! -s img_info ]; then
-        pout "not found img_info file! can't rebuild img."
+        pout "Missing img_info file! Can't rebuild $2."
         clean
     fi 
     eval $(cat img_info)
     if [ -z $kernel ] || [ -z $ramdisk ] || [ -z $base_addr ]; then
-        pout "img_info file have not enough parameters."
+        pout "Lacking parameters in img_info."
         clean
     fi
     [ -z $dtb_size ] && dtb_size=0
     if [ -d $ramdisk ]; then
-	compression_type=$($file -m $magic ./ramdisk.* | cut -d: -f2 | cut -d" " -f2)
+	compression_type=$($file -m $magic ./ramdisk.* | $busybox cut -d: -f2 | $busybox cut -d" " -f2)
 	
 	compression_ext=$compression_type
 	case $compression_type in
@@ -152,34 +158,34 @@ if [ ! -z $mkboot_from_dir ]; then
 					# XZ
 					$mkbootfs $ramdisk | $compression_repack > new_ramdisk.$compression_ext
 					ramdisk=new_ramdisk.$compression_ext
-					ramdisk_size=$(stat -c "%s" $ramdisk)
+					ramdisk_size=$($busybox stat -c "%s" $ramdisk)
 				fi
 			else
 				# LZ4
 				$mkbootfs $ramdisk | $compression_repack > new_ramdisk.$compression_ext
 				ramdisk=new_ramdisk.$compression_ext
-				ramdisk_size=$(stat -c "%s" $ramdisk)
+				ramdisk_size=$($busybox stat -c "%s" $ramdisk)
 			fi
 		else
 			# LZMA using xz binary
 			$mkbootfs $ramdisk | $compression_repack > new_ramdisk.$compression_ext
 			ramdisk=new_ramdisk.$compression_ext
-			ramdisk_size=$(stat -c "%s" $ramdisk)
+			ramdisk_size=$($busybox stat -c "%s" $ramdisk)
 		fi
 	else
 		# GZIP
 		$mkbootfs $ramdisk | $compression_repack > new_ramdisk.$compression_ext
 		ramdisk=new_ramdisk.$compression_ext
-		ramdisk_size=$(stat -c "%s" $ramdisk)
+		ramdisk_size=$($busybox stat -c "%s" $ramdisk)
 	fi
     fi
     #cd $unpacked_dir
     print_info
-    busybox rm -f $new_img
-    mkboot_img $new_img || perr "Make boot.img Error! pls check img_info file."
+    $busybox rm -f $new_img
+    mkboot_img $new_img || perr "Make $new_img Error! pls check img_info file."
     #pout "Add SEANDROIDENFORCE tag."
     #printf SEANDROIDENFORCE >> $new_img
-    busybox rm -f new_ramdisk.gz
+    $busybox rm -f new_ramdisk.gz
     clean
 fi
 
@@ -188,7 +194,7 @@ if [ -e $2 ]; then
     read -p "$2 exists, delete?(N/y)" reply
     case $reply in
         y | Y)
-        busybox rm -rf $2
+        $busybox rm -rf $2
         ;;
     *)
         exit
@@ -196,32 +202,32 @@ if [ -e $2 ]; then
     esac
 fi
 tempdir=$2
-mkdir -p "$tempdir"
+$busybox  mkdir -p "$tempdir"
 pout "\nUnpack & decompress $1 to $2\n"
 
 #get boot.img info
 cp -f $1 $tempdir/
 cd $tempdir
-bootimg=$(basename $1)
-offset=$($grep -abo ANDROID! $bootimg | cut -f 1 -d :)
+bootimg=$($busybox basename $1)
+offset=$($grep -abo ANDROID! $bootimg | $busybox cut -f 1 -d :)
 [ -z $offset ] && clean
 if [ $offset -gt 0 ]; then
-    dd if=$bootimg of=bootimg bs=$offset skip=1 2>/dev/null
+    $busybox dd if=$bootimg of=bootimg bs=$offset skip=1 2>/dev/null
     bootimg=bootimg
 fi
 
-kernel_addr=0x$(${od} -A n -X -j 12 -N 4 $bootimg | sed 's/ //g' | sed 's/^0*//g')
-ramdisk_addr=0x$(${od} -A n -X -j 20 -N 4 $bootimg | sed 's/ //g' | sed 's/^0*//g')
-second_addr=0x$(${od} -A n -X -j 28 -N 4 $bootimg | sed 's/ //g' | sed 's/^0*//g')
-tags_addr=0x$(${od} -A n -X -j 32 -N 4 $bootimg | sed 's/ //g' | sed 's/^0*//g')
+kernel_addr=0x$($od -A n -X -j 12 -N 4 $bootimg | $busybox sed 's/ //g' | $busybox sed 's/^0*//g')
+ramdisk_addr=0x$($od -A n -X -j 20 -N 4 $bootimg | $busybox sed 's/ //g' | $busybox sed 's/^0*//g')
+second_addr=0x$($od -A n -X -j 28 -N 4 $bootimg | $busybox sed 's/ //g' | $busybox sed 's/^0*//g')
+tags_addr=0x$($od -A n -X -j 32 -N 4 $bootimg | $busybox sed 's/ //g' | $busybox sed 's/^0*//g')
 
-kernel_size=$(${od} -A n -D -j 8 -N 4 $bootimg | sed 's/ //g')
-base_addr=0x$(${od} -A n -x -j 14 -N 2 $bootimg | sed 's/ //g')0000
-ramdisk_size=$(${od} -A n -D -j 16 -N 4 $bootimg | sed 's/ //g')
-second_size=$(${od} -A n -D -j 24 -N 4 $bootimg | sed 's/ //g')
-page_size=$(${od} -A n -D -j 36 -N 4 $bootimg | sed 's/ //g')
-dtb_size=$(${od} -A n -D -j 40 -N 4 $bootimg | sed 's/ //g')
-cmd_line=$(${od} -A n --strings -j 64 -N 512 $bootimg)
+kernel_size=$($od -A n -D -j 8 -N 4 $bootimg | $busybox sed 's/ //g')
+base_addr=0x$($od -A n -x -j 14 -N 2 $bootimg | $busybox sed 's/ //g')0000
+ramdisk_size=$($od -A n -D -j 16 -N 4 $bootimg | $busybox sed 's/ //g')
+second_size=$($od -A n -D -j 24 -N 4 $bootimg | $busybox sed 's/ //g')
+page_size=$($od -A n -D -j 36 -N 4 $bootimg | $busybox sed 's/ //g')
+dtb_size=$($od -A n -D -j 40 -N 4 $bootimg | $busybox sed 's/ //g')
+cmd_line=$($od -A n --strings -j 64 -N 512 $bootimg)
 
 kernel_offset=$((kernel_addr-base_addr))
 ramdisk_offset=$((ramdisk_addr-base_addr))
@@ -229,16 +235,17 @@ second_offset=$((second_addr-base_addr))
 tags_offset=$((tags_addr-base_addr))
 
 #########################################################
+# BELOW SECTION HANDLES NON STANDARD IMAGES
 
 non_standard_base=$((tags_addr-0x00000100)) # Need this to get the TRUE Base Address
-non_standard_base_addr=$(printf "0x%08x" $non_standard_base)
-base_addr_verify=$(printf "0x%08x" $base_addr)
-base_addr=$(printf "0x%08x" $base_addr)
+non_standard_base_addr=$($busybox printf "0x%08x" $non_standard_base)
+base_addr_verify=$($busybox printf "0x%08x" $base_addr)
+base_addr=$($busybox printf "0x%08x" $base_addr)
 
 if [ $base_addr == $non_standard_base ]; then
-	base_addr=$(printf "0x%08x" $base_addr)
+	base_addr=$($busybox printf "0x%08x" $base_addr)
 else
-	base_addr=$(printf "0x%08x" $non_standard_base_addr)
+	base_addr=$($busybox printf "0x%08x" $non_standard_base_addr)
 fi
 
 # Accurate offsets used on images with non standard mkbootimg.c
@@ -254,26 +261,26 @@ second_offset_s=$((second_addr-0x00f00000))
 tags_offset_s=$((tags_addr-0x00000100))
 
 if [ $non_standard_base -eq $kernel_offset_s ]; then
-	kernel_offset=$(printf "0x%08x" $kernel_offset)
+	kernel_offset=$($busybox printf "0x%08x" $kernel_offset)
 else
-	kernel_offset_ns=$(printf "0x%08x" $kernel_offset_ns)
-	kernel_offset=$(printf "0x%08x" $kernel_offset_ns)
+	kernel_offset_ns=$($busybox printf "0x%08x" $kernel_offset_ns)
+	kernel_offset=$($busybox printf "0x%08x" $kernel_offset_ns)
 	kernel_offset_warning=$kernel_offset_ns
 fi
 
 if [ $non_standard_base -eq $ramdisk_offset_s ]; then
-	ramdisk_offset=$(printf "0x%08x" $ramdisk_offset)
+	ramdisk_offset=$($busybox printf "0x%08x" $ramdisk_offset)
 else
-	ramdisk_offset_ns=$(printf "0x%08x" $ramdisk_offset_ns)
-	ramdisk_offset=$(printf "0x%08x" $ramdisk_offset_ns)
+	ramdisk_offset_ns=$($busybox printf "0x%08x" $ramdisk_offset_ns)
+	ramdisk_offset=$($busybox printf "0x%08x" $ramdisk_offset_ns)
 	ramdisk_offset_warning=$ramdisk_offset_ns
 fi
 
 if [ $non_standard_base -eq $second_offset_s ]; then
-	second_offset=$(printf "0x%08x" $second_offset)
+	second_offset=$($busybox printf "0x%08x" $second_offset)
 else
-	second_offset_ns=$(printf "0x%08x" $second_offset_ns)
-	second_offset=$(printf "0x%08x" $second_offset_ns)
+	second_offset_ns=$($busybox printf "0x%08x" $second_offset_ns)
+	second_offset=$($busybox printf "0x%08x" $second_offset_ns)
 	second_offset_warning=$second_offset_ns
 fi
 
@@ -281,7 +288,7 @@ if [ $base_addr_verify != $non_standard_base_addr ]; then
 	base_warning=$non_standard_base_addr
 fi
 
-tags_offset=$(printf "0x%08x" $tags_offset_ns)
+tags_offset=$($busybox printf "0x%08x" $tags_offset_ns)
 
 # Below are the known offsets for non standard mkbootimg.c
 if [[ ! -z $kernel_offset_warning ]] || [[ ! -z $ramdisk_offset_warning ]] || [[ ! -z $second_offset_warning ]]; then
@@ -305,6 +312,7 @@ if [[ ! -z $kernel_offset_warning ]] || [[ ! -z $ramdisk_offset_warning ]] || [[
 	pout "\n****** WARNING ******* WARNING ******* WARNING ******\n"
 fi
 
+# ABOVE SECTION HANDLES NON STANDARD IMAGES
 #########################################################
 
 k_count=$(((kernel_size+page_size-1)/page_size))
@@ -317,21 +325,21 @@ s_offset=$((r_offset+r_count))
 d_offset=$((s_offset+s_count))
 
 #zImage
-dd if=$bootimg of=zImage_tmp bs=$page_size skip=$k_offset count=$k_count 2>/dev/null
-dd if=zImage_tmp of=zImage bs=$kernel_size count=1 2>/dev/null
+$busybox dd if=$bootimg of=zImage_tmp bs=$page_size skip=$k_offset count=$k_count 2>/dev/null
+$busybox dd if=zImage_tmp of=zImage bs=$kernel_size count=1 2>/dev/null
 #ramdisk.gz
-dd if=$bootimg of=ramdisk_tmp bs=$page_size skip=$r_offset count=$r_count 2>/dev/null
-dd if=ramdisk_tmp of=ramdisk.gz bs=$ramdisk_size count=1 2>/dev/null
+$busybox dd if=$bootimg of=ramdisk_tmp bs=$page_size skip=$r_offset count=$r_count 2>/dev/null
+$busybox dd if=ramdisk_tmp of=ramdisk.gz bs=$ramdisk_size count=1 2>/dev/null
 #dtb
 if [ $dtb_size -gt 0 ]; then
-    dd if=$bootimg of=dt.img_tmp bs=$page_size skip=$d_offset count=$d_count 2>/dev/null
-    dd if=dt.img_tmp of=dt.img bs=$dtb_size count=1 2>/dev/null
+    $busybox dd if=$bootimg of=dt.img_tmp bs=$page_size skip=$d_offset count=$d_count 2>/dev/null
+    $busybox dd if=dt.img_tmp of=dt.img bs=$dtb_size count=1 2>/dev/null
     dt="$tempdir/dt.img"
-    dt=$(basename $dt)
+    dt=$($busybox basename $dt)
     dt_name="dt=$dt\n"
     dt_size="dtb_size=$dtb_size\n"
 fi
-rm -f *_tmp $(basename $1) $bootimg
+$busybox rm -f *_tmp $($busybox basename $1) $bootimg
 
 kernel=zImage
 ramdisk=ramdisk
@@ -340,24 +348,24 @@ ramdisk=ramdisk
 print_info
 
 #write info to img_info,decompression ramdisk.gz
-printf "kernel=zImage\nramdisk=ramdisk\n${dt_name}page_size=$page_size\n\
+$busybox printf "kernel=zImage\nramdisk=ramdisk\n${dt_name}page_size=$page_size\n\
 kernel_size=$kernel_size\nramdisk_size=$ramdisk_size\n${dt_size}base_addr=$base_addr\nkernel_offset=$kernel_offset\n\
 ramdisk_offset=$ramdisk_offset\ntags_offset=$tags_offset\ncmd_line=\"$cmd_line\"\n" > img_info
-mkdir ramdisk
+$busybox mkdir ramdisk
 cd ramdisk
 
-compression_type=$($file -m $magic ../ramdisk.gz | cut -d: -f2 | cut -d" " -f2)
+compression_type=$($file -m $magic ../ramdisk.gz | $busybox cut -d: -f2 | $busybox cut -d" " -f2)
 compression_warning=$compression_type
 
 case $compression_type in
-  gzip) compression_type=$gzip; compression_ext=gz;;
-  xz) compression_type=$xz; compression_ext=xz;;
-  lzma) compression_type=$lzma; compression_ext=lzma;;
-  lz4) compression_ext=lz4; decomp_ramdisk="$lz4 -d"; extra="< ../ramdisk.cpio";;
+	gzip) compression_type=$gzip; compression_ext=gz;;
+	xz) compression_type=$xz; compression_ext=xz;;
+	lzma) compression_type=$lzma; compression_ext=lzma;;
+	lz4) compression_ext=lz4; decomp_ramdisk="$lz4 -d"; extra="< ../ramdisk.cpio";;
 esac;
 
-if [[ $compression_ext != lz4 ]]; then
-decomp_ramdisk="$compression_type -d -c"
+if [[ $compression_ext != "lz4" ]]; then
+	decomp_ramdisk="$compression_type -d -c"
 fi
 decomp_ramdisk2="$cpio -i -d -m --no-absolute-filenames"
 
@@ -369,7 +377,7 @@ if [ -z $compression_ext ]; then
 	exit
 fi
 
-mv ../ramdisk.gz ../ramdisk.$compression_ext # This is simply to remind the user if they view the folder afterwards
+$busybox mv ../ramdisk.gz ../ramdisk.$compression_ext # This is simply to remind the user if they view the folder afterwards
 pout "\nRamdisk is $compression_warning format."
 $decomp_ramdisk "../ramdisk.$compression_ext" | $decomp_ramdisk2 $extra
 
