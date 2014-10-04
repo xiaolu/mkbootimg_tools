@@ -142,10 +142,10 @@ if [ ! -z $mkboot_from_dir ]; then
 		pout "\n****** HAZARD ******* HAZARD ******* HAZARD ******\n"
 		exit
 	fi	
-	if [ $compression_type == "gzip" ]; then
-		if [ $compression_type == "lzma" ]; then
-			if [ $compression_type == "lz4" ]; then
-				if [ $compression_type == "xz" ]; then
+	if [ $compression_type != "gzip" ]; then
+		if [ $compression_type != "lzma" ]; then
+			if [ $compression_type != "lz4" ]; then
+				if [ $compression_type != "xz" ]; then
 					pout "\nRamdisk is unknown format. Can't repack ramdisk."
 					exit 0
 				else
@@ -356,7 +356,7 @@ case $compression_type in
   lz4) compression_ext=lz4; decomp_ramdisk="$lz4 -d"; extra="< ../ramdisk.cpio";;
 esac;
 
-if [ $compression_ext != "lz4" ]; then
+if [[ $compression_ext != lz4 ]]; then
 decomp_ramdisk="$compression_type -d -c"
 fi
 decomp_ramdisk2="$cpio -i -d -m --no-absolute-filenames"
