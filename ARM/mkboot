@@ -54,7 +54,7 @@ clean()
 
 # Check for busybox
 if [ -z $busybox ]; then
-	clear; pout "Busybox is NOT installed!\nThis may cause issues with the script!"
+	clear; pout "Busybox is NOT installed!\nThis may cause issues with the script!\nUse at your own risk or install busybox!"; sleep 3
 fi
 
 usage()
