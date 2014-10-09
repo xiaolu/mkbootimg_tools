@@ -19,6 +19,7 @@ workdir=$(pwd)
 toolpath=$(readlink -f $0)
 tooldir=$(dirname $toolpath)
 mkbootimg=$tooldir/mkbootimg
+mkbootfs=$tooldir/mkbootfs
 old_bootimg=true
 C_OUT="\033[0;1m"
 C_ERR="\033[31;1m"
@@ -114,7 +115,7 @@ if [ ! -z $mkboot_from_dir ]; then
     if [ -d $ramdisk ]; then
         #cd $ramdisk
         #find . | cpio -R 0:0 -H newc -o 2>/dev/null | gzip > $unpacked_dir/new_ramdisk.gz
-        mkbootfs $ramdisk | gzip > new_ramdisk.gz
+        $mkbootfs $ramdisk | gzip > new_ramdisk.gz
         ramdisk=new_ramdisk.gz
         ramdisk_size=$(stat -c "%s" $ramdisk)
     fi
