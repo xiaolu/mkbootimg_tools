@@ -20,7 +20,6 @@ toolpath=$(readlink -f $0)
 tooldir=$(dirname $toolpath)
 mkbootimg=$tooldir/mkbootimg
 mkbootfs=$tooldir/mkbootfs
-old_bootimg=true
 C_OUT="\033[0;1m"
 C_ERR="\033[31;1m"
 C_CLEAR="\033[0;0m"
@@ -63,7 +62,8 @@ print_info()
     pout "  base           : $base_addr"
     pout "  kernel offset  : $kernel_offset"
     pout "  ramdisk offset : $ramdisk_offset"
-    [ -z $second_offset ] || pout "  second_offset  : $second_offset"
+    [ ! -z $second_size ] && [ $second_size -gt 0 ] && \
+        pout "  second_offset  : $second_offset"
     pout "  tags offset    : $tags_offset"
     [ $dtb_size -gt 0 ] && pout "  dtb img        : $dt"
     pout "  cmd line       : $cmd_line"
@@ -162,13 +162,14 @@ second_addr=0x$(od -A n -X -j 28 -N 4 $bootimg | sed 's/ //g' | sed 's/^0*//g')
 tags_addr=0x$(od -A n -X -j 32 -N 4 $bootimg | sed 's/ //g' | sed 's/^0*//g')
 
 kernel_size=$(od -A n -D -j 8 -N 4 $bootimg | sed 's/ //g')
-base_addr=0x$(od -A n -x -j 14 -N 2 $bootimg | sed 's/ //g')0000
+#base_addr=0x$(od -A n -x -j 14 -N 2 $bootimg | sed 's/ //g')0000
 ramdisk_size=$(od -A n -D -j 16 -N 4 $bootimg | sed 's/ //g')
 second_size=$(od -A n -D -j 24 -N 4 $bootimg | sed 's/ //g')
 page_size=$(od -A n -D -j 36 -N 4 $bootimg | sed 's/ //g')
 dtb_size=$(od -A n -D -j 40 -N 4 $bootimg | sed 's/ //g')
 cmd_line=$(od -A n --strings -j 64 -N 512 $bootimg)
 
+base_addr=$((kernel_addr-0x00008000))
 kernel_offset=$((kernel_addr-base_addr))
 ramdisk_offset=$((ramdisk_addr-base_addr))
 second_offset=$((second_addr-base_addr))
