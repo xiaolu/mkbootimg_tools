@@ -203,11 +203,17 @@ ramdisk_offset=$((ramdisk_addr-base_addr))
 second_offset=$((second_addr-base_addr))
 tags_offset=$((tags_addr-base_addr))
 
-base_addr=$(printf "0x%08x" $base_addr)
-kernel_offset=$(printf "0x%08x" $kernel_offset)
-ramdisk_offset=$(printf "0x%08x" $ramdisk_offset)
-second_offset=$(printf "0x%08x" $second_offset)
-tags_offset=$(printf "0x%08x" $tags_offset)
+base_addr=$(printf "%08x" $base_addr)
+kernel_offset=$(printf "%08x" $kernel_offset)
+ramdisk_offset=$(printf "%08x" $ramdisk_offset)
+second_offset=$(printf "%08x" $second_offset)
+tags_offset=$(printf "%08x" $tags_offset)
+
+base_addr=0x${base_addr:0-8}
+kernel_offset=0x${kernel_offset:0-8}
+ramdisk_offset=0x${ramdisk_offset:0-8}
+second_offset=0x${second_offset:0-8}
+tags_offset=0x${tags_offset:0-8}
 
 k_count=$(((kernel_size+page_size-1)/page_size))
 r_count=$(((ramdisk_size+page_size-1)/page_size))
