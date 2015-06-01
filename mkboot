@@ -95,12 +95,13 @@ print_info()
 mkboot_img()
 {
     error=0
+    [ $second_size -gt 0}; second="--second ${second}"
     [ $dtb_size -gt 0 ] && dtb="--dt ${dt}"
 
     $mkbootimg --kernel $kernel --ramdisk $ramdisk --board "$board" \
         --base $base_addr --ramdisk_offset $ramdisk_offset \
         --tags_offset $tags_offset --cmdline "$cmd_line" \
-        --pagesize $page_size $dtb -o $1 || error=1
+        --pagesize $page_size $second $dtb -o $1 || error=1
 
     [ $error -eq 1 ] && return $error
     ramdisk_size=$(stat -c "%s" $ramdisk)
@@ -134,6 +135,7 @@ if [ ! -z $mkboot_from_dir ]; then
         pout "img_info file have not enough parameters."
         clean
     fi
+    [ -z $second_size ] && second_size=0
     [ -z $dtb_size ] && dtb_size=0
     if [ -d $ramdisk ]; then
         [ -z $format ] && format=gzip
@@ -230,6 +232,13 @@ dd if=kernel_tmp of=kernel bs=$kernel_size count=1 2>/dev/null
 #ramdisk.packed
 dd if=$bootimg of=ramdisk_tmp bs=$page_size skip=$r_offset count=$r_count 2>/dev/null
 dd if=ramdisk_tmp of=ramdisk.packed bs=$ramdisk_size count=1 2>/dev/null
+#second
+if [ $second_size -gt 0 ]; then
+   dd if=$bootimg of=second.img.tmp bs=$page_size skip=$s_offset count=$s_count 2>/dev/null
+   dd if=second.img.tmp of=second.img bs=$second_size count=1 2>/dev/null
+   s_name="second=second.img\n"
+   s_size="second_size=$second_size\n"
+fi
 #dtb
 if [ $dtb_size -gt 0 ]; then
     dd if=$bootimg of=dt.img_tmp bs=$page_size skip=$d_offset count=$d_count 2>/dev/null
@@ -248,8 +257,8 @@ ramdisk=ramdisk
 print_info
 
 #write info to img_info,decompression ramdisk.packed
-printf "kernel=kernel\nramdisk=ramdisk\n${dt_name}page_size=$page_size\n\
-kernel_size=$kernel_size\nramdisk_size=$ramdisk_size\n${dt_size}base_addr=$base_addr\nkernel_offset=$kernel_offset\n\
+printf "kernel=kernel\nramdisk=ramdisk\n${s_name}${dt_name}page_size=$page_size\n\
+kernel_size=$kernel_size\nramdisk_size=$ramdisk_size\n${s_size}${dt_size}base_addr=$base_addr\nkernel_offset=$kernel_offset\n\
 ramdisk_offset=$ramdisk_offset\ntags_offset=$tags_offset\ncmd_line=\"$cmd_line\"\nboard=\"$board\"\n" > img_info
 mkdir ramdisk
 cd ramdisk
