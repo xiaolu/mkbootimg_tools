@@ -95,7 +95,7 @@ print_info()
 mkboot_img()
 {
     error=0
-    [ $second_size -gt 0}; second="--second ${second}"
+    [ $second_size -gt 0 ] && second="--second ${second}"
     [ $dtb_size -gt 0 ] && dtb="--dt ${dt}"
 
     $mkbootimg --kernel $kernel --ramdisk $ramdisk --board "$board" \
