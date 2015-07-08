@@ -256,10 +256,13 @@ ramdisk=ramdisk
 #print boot.img info
 print_info
 
+esq="'\"'\"'"
+escaped_cmd_line=`echo $cmd_line | sed "s/'/$esq/g"`
+
 #write info to img_info,decompression ramdisk.packed
 printf "kernel=kernel\nramdisk=ramdisk\n${s_name}${dt_name}page_size=$page_size\n\
 kernel_size=$kernel_size\nramdisk_size=$ramdisk_size\n${s_size}${dt_size}base_addr=$base_addr\nkernel_offset=$kernel_offset\n\
-ramdisk_offset=$ramdisk_offset\ntags_offset=$tags_offset\ncmd_line=\"$cmd_line\"\nboard=\"$board\"\n" > img_info
+ramdisk_offset=$ramdisk_offset\ntags_offset=$tags_offset\ncmd_line=\'$escaped_cmd_line\'\nboard=\"$board\"\n" > img_info
 mkdir ramdisk
 cd ramdisk
 
