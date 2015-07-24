@@ -16,7 +16,7 @@
 #original author: xiaolu
 #heavily modified by: Modding.MyMind
 
-set -x # for debugging
+#set -x # for debugging
 
 trap "clean" 2 3 4
 workdir=$(pwd)
