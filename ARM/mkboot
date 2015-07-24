@@ -16,7 +16,7 @@
 #original author: xiaolu
 #heavily modified by: Modding.MyMind
 
-#set -x # for debugging
+set -x # for debugging
 
 trap "clean" 2 3 4
 workdir=$(pwd)
@@ -74,7 +74,7 @@ usage()
 
 print_info()
 {
-    [ ! -z "$board" ] && pout "  board          : $board"  
+    [ ! -z "$board" ] && pout "  board          : $board"
     pout "  kernel         : $kernel"
     pout "  ramdisk        : $ramdisk"
     pout "  page size      : $page_size"
@@ -119,8 +119,9 @@ mkboot_img()
     [ $second_size -gt 0 ] && second="--second ${second}"
     [ $dtb_size -gt 0 ] && dtb="--dt ${dt}"
     [ ! -z $second_offset ] && second_offset="--second_offset ${second_offset}"
+    [ ! -z "$board" ] && board="--board $board"
 
-    $mkbootimg --kernel $kernel --ramdisk $ramdisk --board "$board" \
+    $mkbootimg --kernel $kernel --ramdisk $ramdisk $board \
         --base $base_addr --ramdisk_offset $ramdisk_offset \
         --kernel_offset $kernel_offset $second_offset \
         --tags_offset $tags_offset --cmdline "$cmd_line" \
@@ -442,9 +443,12 @@ print_info
 cmd_line=$(echo $cmd_line | sed -e "s/'/'\\\\''/g; 1s/^/'/; \$s/\$/'/")
 
 #write info to img_info,decompression ramdisk.gz
+
+[ ! -z "$board" ] && liveboard="board=\"$board\""
+
 $busybox printf "kernel=zImage\nramdisk=ramdisk\n${secondb_name}\n${dt_name}\npage_size=$page_size\n\
 kernel_size=$kernel_size\nramdisk_size=$ramdisk_size\n${secondb_size}\n${dt_size}\nbase_addr=$base_addr\nkernel_offset=$kernel_offset\n\
-ramdisk_offset=$ramdisk_offset\nsecond_offset=$second_offset\ntags_offset=$tags_offset\ncmd_line=$cmd_line\nboard=\"$board\"\n" > img_info
+ramdisk_offset=$ramdisk_offset\nsecond_offset=$second_offset\ntags_offset=$tags_offset\ncmd_line=$cmd_line\n$liveboard\n" > img_info
 
 # Include original image size in bytes to img_info
 image_size=$($busybox stat -c "%s" '../'$1)
