@@ -296,20 +296,6 @@ tags_offset=0x${tags_offset:0-8}
 #########################################################
 # BELOW SECTION HANDLES NON STANDARD IMAGES
 
-# Do the Offsets match with the Base Address for standard mkbootimg.c?
-kernel_offset_s=$((kernel_addr-0x00008000))
-kernel_offset_s=$($busybox printf "%08x" $kernel_offset_s)
-kernel_offset_s=0x${kernel_offset_s:0-8}
-ramdisk_offset_s=$((ramdisk_addr-0x01000000))
-ramdisk_offset_s=$($busybox printf "%08x" $ramdisk_offset_s)
-ramdisk_offset_s=0x${ramdisk_offset_s:0-8}
-second_offset_s=$((second_addr-0x00f00000))
-second_offset_s=$($busybox printf "%08x" $second_offset_s)
-second_offset_s=0x${second_offset_s:0-8}
-tags_offset_s=$((tags_addr-0x00000100))
-tags_offset_s=$($busybox printf "%08x" $tags_offset_s)
-tags_offset_s=0x${tags_offset_s:0-8}
-
 if [ $base_addr != 0x10000000 ]; then
 	base_warning=$base_addr
 fi
