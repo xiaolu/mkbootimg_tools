@@ -296,30 +296,6 @@ tags_offset=0x${tags_offset:0-8}
 #########################################################
 # BELOW SECTION HANDLES NON STANDARD IMAGES
 
-non_standard_base_addr=$((tags_addr-0x00000100)) # Need this to get the TRUE Base Address
-non_standard_base_addr=$($busybox printf "%08x" $non_standard_base_addr)
-non_standard_base_addr=0x${non_standard_base_addr:0-8}
-
-if [ $base_addr == $non_standard_base_addr ]; then
-	base_addr=$base_addr
-else
-	base_addr=$non_standard_base_addr
-fi
-
-# Accurate offsets used on images with non standard mkbootimg.c
-kernel_offset_ns=$((kernel_addr-non_standard_base_addr))
-kernel_offset_ns=$($busybox printf "%08x" $kernel_offset_ns)
-kernel_offset_ns=0x${kernel_offset_ns:0-8}
-ramdisk_offset_ns=$((ramdisk_addr-non_standard_base_addr))
-ramdisk_offset_ns=$($busybox printf "%08x" $ramdisk_offset_ns)
-ramdisk_offset_ns=0x${ramdisk_offset_ns:0-8}
-second_offset_ns=$((second_addr-non_standard_base_addr))
-second_offset_ns=$($busybox printf "%08x" $second_offset_ns)
-second_offset_ns=0x${second_offset_ns:0-8}
-tags_offset_ns=$((tags_addr-non_standard_base_addr))
-tags_offset_ns=$($busybox printf "%08x" $tags_offset_ns)
-tags_offset_ns=0x${tags_offset_ns:0-8}
-
 # Do the Offsets match with the Base Address for standard mkbootimg.c?
 kernel_offset_s=$((kernel_addr-0x00008000))
 kernel_offset_s=$($busybox printf "%08x" $kernel_offset_s)
@@ -334,40 +310,28 @@ tags_offset_s=$((tags_addr-0x00000100))
 tags_offset_s=$($busybox printf "%08x" $tags_offset_s)
 tags_offset_s=0x${tags_offset_s:0-8}
 
-if [ $non_standard_base_addr == $kernel_offset_s ]; then
-	kernel_offset=$kernel_offset
-else
-	kernel_offset=$kernel_offset_ns
+if [ $base_addr != 0x10000000 ]; then
+	base_warning=$base_addr
+fi
+
+if [ $kernel_offset != 0x00008000 ]; then
 	kernel_offset_warning=$kernel_offset
 fi
 
-if [ $non_standard_base_addr == $ramdisk_offset_s ]; then
-	ramdisk_offset=$ramdisk_offset
-else
-	ramdisk_offset=$ramdisk_offset_ns
+if [ $ramdisk_offset != 0x01000000 ]; then
 	ramdisk_offset_warning=$ramdisk_offset
 fi
 
-if [ $non_standard_base_addr == $second_offset_s ]; then
-	second_offset=$second_offset
-else
-	second_offset=$second_offset_ns
+if [ $second_offset != 0x00f00000 ]; then
 	second_offset_warning=$second_offset
 fi
 
-if [ $base_addr != 0x10000000 ]; then
-	base_warning=$non_standard_base_addr
-fi
-
-if [ $non_standard_base_addr == $tags_offset_s ]; then
-	tags_offset=$tags_offset
-else
-	tags_offset=$tags_offset_ns
+if [ $tags_offset != 0x00000100 ]; then
 	tags_offset_warning=$tags_offset
 fi
 
 # Below are the known offsets for non standard mkbootimg.c
-if [[ ! -z $base_warning ]] || [[ ! -z $kernel_offset_warning ]] || [[ ! -z $ramdisk_offset_warning ]] || [[ ! -z $second_offset_warning ]] || [[ ! -z $tags_offset_warning ]]; then
+if [[ ! -z $kernel_offset_warning ]] || [[ ! -z $ramdisk_offset_warning ]] || [[ ! -z $second_offset_warning ]] || [[ ! -z $tags_offset_warning ]] ; then
 	perr "****** WARNING ******* WARNING ******* WARNING ******\n"
 	pout "This image is built using NON-standard mkbootimg!\n"
 fi
@@ -375,18 +339,18 @@ if [ ! -z $base_warning ]; then
 	pout "BASE is $base_warning"
 fi
 if [ ! -z $kernel_offset_warning ]; then
-	pout "KERNEL_OFFSET is $kernel_offset_ns"
+	pout "KERNEL_OFFSET is $kernel_offset_warning"
 fi
 if [ ! -z $ramdisk_offset_warning ]; then
-	pout "RAMDISK_OFFSET is $ramdisk_offset_ns"
+	pout "RAMDISK_OFFSET is $ramdisk_offset_warning"
 fi
 if [ ! -z $second_offset_warning ]; then
-	pout "SECOND_OFFSET is $second_offset_ns"
+	pout "SECOND_OFFSET is $second_offset_warning"
 fi
 if [ ! -z $tags_offset_warning ]; then
-	pout "TAGS_OFFSET is $tags_offset_ns"
+	pout "TAGS_OFFSET is $tags_offset_warning"
 fi
-if [[ ! -z $base_warning ]] || [[ ! -z $kernel_offset_warning ]] || [[ ! -z $ramdisk_offset_warning ]] || [[ ! -z $second_offset_warning ]] || [[ ! -z $tags_offset_warning ]] ; then
+if [[ ! -z $kernel_offset_warning ]] || [[ ! -z $ramdisk_offset_warning ]] || [[ ! -z $second_offset_warning ]] || [[ ! -z $tags_offset_warning ]]; then
 	pout "\nYou can modify mkbootimg.c with the above value(s)"
 	perr "\n****** WARNING ******* WARNING ******* WARNING ******\n"
 fi
