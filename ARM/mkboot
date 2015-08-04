@@ -317,7 +317,7 @@ if [ $tags_offset != 0x00000100 ]; then
 fi
 
 # Below are the known offsets for non standard mkbootimg.c
-if [[ ! -z $kernel_offset_warning ]] || [[ ! -z $ramdisk_offset_warning ]] || [[ ! -z $second_offset_warning ]] || [[ ! -z $tags_offset_warning ]] ; then
+if [[ ! -z $base_warning ]] || [[ ! -z $kernel_offset_warning ]] || [[ ! -z $ramdisk_offset_warning ]] || [[ ! -z $second_offset_warning ]] || [[ ! -z $tags_offset_warning ]] ; then
 	perr "****** WARNING ******* WARNING ******* WARNING ******\n"
 	pout "This image is built using NON-standard mkbootimg!\n"
 fi
@@ -336,7 +336,7 @@ fi
 if [ ! -z $tags_offset_warning ]; then
 	pout "TAGS_OFFSET is $tags_offset_warning"
 fi
-if [[ ! -z $kernel_offset_warning ]] || [[ ! -z $ramdisk_offset_warning ]] || [[ ! -z $second_offset_warning ]] || [[ ! -z $tags_offset_warning ]]; then
+if [[ ! -z $base_warning ]] || [[ ! -z $kernel_offset_warning ]] || [[ ! -z $ramdisk_offset_warning ]] || [[ ! -z $second_offset_warning ]] || [[ ! -z $tags_offset_warning ]]; then
 	pout "\nYou can modify mkbootimg.c with the above value(s)"
 	perr "\n****** WARNING ******* WARNING ******* WARNING ******\n"
 fi
