@@ -74,6 +74,7 @@ usage()
 
 print_info()
 {
+    [ $boot_magic_addr -gt 0 ] && pout "  boot magic     : ANDROID!"; pout "  magic address  : $boot_magic   ($boot_magic_addr)"
     [ ! -z "$board" ] && pout "  board          : $board"
     pout "  kernel         : $kernel"
     pout "  ramdisk        : $ramdisk"
@@ -253,8 +254,9 @@ pout "\nUnpack & decompress $1 to $2\n"
 cp -f $1 $tempdir/
 cd $tempdir
 bootimg=$($busybox basename $1)
-# Find BOOT_MAGIC address in dec
+# Find BOOT_MAGIC address in dec and hex
 boot_magic_addr=$($grep -abo ANDROID! $bootimg | $busybox cut -f 1 -d : | head -1)
+boot_magic=`printf 0x%08x $boot_magic_addr`
 # Find standard QCDT address in hex
 qcdt_addr=$($grep -abo QCDT $bootimg | $busybox cut -f 1 -d : | head -1)
 qcdt_addr=`printf 0x%x $qcdt_addr`
