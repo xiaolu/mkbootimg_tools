@@ -74,8 +74,8 @@ usage()
 
 print_info()
 {
-    [ $boot_magic_addr -gt 0 ] && pout "  boot magic     : ANDROID!"
-    [ $boot_magic_addr -gt 0 ] && pout "  magic address  : $boot_magic   ($boot_magic_addr)"
+    [[ $boot_magic_addr -gt 0 ]] && pout "  boot magic     : ANDROID!"
+    [[ $boot_magic_addr -gt 0 ]] && pout "  magic address  : $boot_magic   ($boot_magic_addr)"
     [ ! -z "$board" ] && pout "  board          : $board"
     pout "  kernel         : $kernel"
     pout "  ramdisk        : $ramdisk"
