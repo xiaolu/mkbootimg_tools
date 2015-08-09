@@ -108,6 +108,7 @@ if [ ! -z $tags_offset_warning ]; then
 else
     pout "  tags offset    : $tags_offset"
 fi
+    [ -z $qcdt_offset ] || pout "  dtb offset     : $qcdt_offset"
     [ $dtb_size -gt 0 ] && pout "  dtb img        : $dt"
     [ $second_size -gt 0 ] && pout "  second img     : $second"
     pout "  cmd line       : $cmd_line"
@@ -252,10 +253,14 @@ pout "\nUnpack & decompress $1 to $2\n"
 cp -f $1 $tempdir/
 cd $tempdir
 bootimg=$($busybox basename $1)
-offset=$($grep -abo ANDROID! $bootimg | $busybox cut -f 1 -d : | head -1)
-[ -z $offset ] && clean
-if [ $offset -gt 0 ]; then
-    $busybox dd if=$bootimg of=bootimg bs=$offset skip=1 2>/dev/null
+# Find BOOT_MAGIC address in dec
+boot_magic_addr=$($grep -abo ANDROID! $bootimg | $busybox cut -f 1 -d : | head -1)
+# Find standard QCDT address in hex
+qcdt_addr=$($grep -abo QCDT $bootimg | $busybox cut -f 1 -d : | head -1)
+qcdt_addr=`printf 0x%x $qcdt_addr`
+[ -z $boot_magic_addr ] && clean
+if [ $boot_magic_addr -gt 0 ]; then
+    $busybox dd if=$bootimg of=bootimg bs=$boot_magic_addr skip=1 2>/dev/null
     bootimg=bootimg
 fi
 
@@ -280,18 +285,21 @@ kernel_offset=$((kernel_addr-base_addr))
 ramdisk_offset=$((ramdisk_addr-base_addr))
 second_offset=$((second_addr-base_addr))
 tags_offset=$((tags_addr-base_addr))
+qcdt_offset=$((qcdt_addr-base_addr))
 
 base_addr=$(printf "%08x" $base_addr)
 kernel_offset=$(printf "%08x" $kernel_offset)
 ramdisk_offset=$(printf "%08x" $ramdisk_offset)
 second_offset=$(printf "%08x" $second_offset)
 tags_offset=$(printf "%08x" $tags_offset)
+qcdt_offset=$(printf "%08x" $qcdt_offset)
 
 base_addr=0x${base_addr:0-8}
 kernel_offset=0x${kernel_offset:0-8}
 ramdisk_offset=0x${ramdisk_offset:0-8}
 second_offset=0x${second_offset:0-8}
 tags_offset=0x${tags_offset:0-8}
+qcdt_offset=0x${qcdt_offset:0-8}
 
 #########################################################
 # BELOW SECTION HANDLES NON STANDARD IMAGES
@@ -398,7 +406,7 @@ cmd_line=$(echo $cmd_line | sed -e "s/'/'\\\\''/g; 1s/^/'/; \$s/\$/'/")
 
 $busybox printf "kernel=zImage\nramdisk=ramdisk\n${secondb_name}\n${dt_name}\npage_size=$page_size\n\
 kernel_size=$kernel_size\nramdisk_size=$ramdisk_size\n${secondb_size}\n${dt_size}\nbase_addr=$base_addr\nkernel_offset=$kernel_offset\n\
-ramdisk_offset=$ramdisk_offset\nsecond_offset=$second_offset\ntags_offset=$tags_offset\ncmd_line=$cmd_line\n$liveboard\n" > img_info
+ramdisk_offset=$ramdisk_offset\nsecond_offset=$second_offset\ntags_offset=$tags_offset\qcdt_offset=$qcdt_offset\ncmd_line=$cmd_line\n$liveboard\n" > img_info
 
 # Include original image size in bytes to img_info
 image_size=$($busybox stat -c "%s" '../'$1)
