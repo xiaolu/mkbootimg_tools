@@ -74,7 +74,8 @@ usage()
 
 print_info()
 {
-    [ $boot_magic_addr -gt 0 ] && pout "  boot magic     : ANDROID!"; pout "  magic address  : $boot_magic   ($boot_magic_addr)"
+    [ $boot_magic_addr -gt 0 ] && pout "  boot magic     : ANDROID!"
+    [ $boot_magic_addr -gt 0 ] && pout "  magic address  : $boot_magic   ($boot_magic_addr)"
     [ ! -z "$board" ] && pout "  board          : $board"
     pout "  kernel         : $kernel"
     pout "  ramdisk        : $ramdisk"
@@ -109,7 +110,7 @@ if [ ! -z $tags_offset_warning ]; then
 else
     pout "  tags offset    : $tags_offset"
 fi
-    [ -z $qcdt_offset ] || pout "  dtb offset     : $qcdt_offset"
+    [ $dtb_size -gt 0 ] && pout "  dtb offset     : $qcdt_offset"
     [ $dtb_size -gt 0 ] && pout "  dtb img        : $dt"
     [ $second_size -gt 0 ] && pout "  second img     : $second"
     pout "  cmd line       : $cmd_line"
@@ -259,7 +260,9 @@ boot_magic_addr=$($grep -abo ANDROID! $bootimg | $busybox cut -f 1 -d : | head -
 boot_magic=`printf 0x%08x $boot_magic_addr`
 # Find standard QCDT address in hex
 qcdt_addr=$($grep -abo QCDT $bootimg | $busybox cut -f 1 -d : | head -1)
-qcdt_addr=`printf 0x%x $qcdt_addr`
+if [ ! -z $qcdt_addr ]; then
+    qcdt_addr=`printf 0x%x $qcdt_addr`
+fi
 [ -z $boot_magic_addr ] && clean
 if [ $boot_magic_addr -gt 0 ]; then
     $busybox dd if=$bootimg of=bootimg bs=$boot_magic_addr skip=1 2>/dev/null
