@@ -28,6 +28,7 @@ busybox=$(command -v busybox)
 od=$tooldir/od
 gzip=$tooldir/gzip
 lz4=$tooldir/lz4
+lzop=$tooldir/lzop
 lzma=$tooldir/lzma
 xz=$tooldir/xz # Also used for lzma compression
 grep=$tooldir/grep
@@ -182,8 +183,8 @@ if [ ! -z $mkboot_from_dir ]; then
 			gzip) compression_warning=$compression_type; compression_repack=$gzip;;
 			xz) compression_warning=$compression_type; compression_repack="$xz -1 --check=crc32";;
 			lzma) compression_warning=$compression_type; compression_repack="$xz --format=lzma";;
-			lz4) compression_warning=$compression_type; compression_repack="$lz4 -l";;
-			lzop) compression_warning=$compression_type; compression_repack="$busybox lzop";;
+			lz4) compression_warning=$compression_type; compression_repack="$lz4 -l -9";;
+			lzop) compression_warning=$compression_type; compression_repack="$lzop -f -9";;
 		esac;
 		if [ -z $compression_warning ]; then
 			perr "\n****** HAZARD ******* HAZARD ******* HAZARD ******"
@@ -405,7 +406,7 @@ case $compression_type in
 	xz) compression_type=$xz; compression_ext=xz;;
 	lzma) compression_type=$lzma; compression_ext=lzma;;
 	lz4) compression_ext=lz4; decomp_ramdisk="$lz4 -d"; extra="< ../ramdisk.cpio";;
-	lzop) compression_ext=lzop; decomp_ramdisk="$busybox lzop -d";;
+	lzop) compression_ext=lzop; decomp_ramdisk="$lzop -d";;
 esac;
 
 if [[ $compression_ext != lz4 ]]; then
