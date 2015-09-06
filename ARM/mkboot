@@ -178,13 +178,12 @@ if [ ! -z $mkboot_from_dir ]; then
 
 	if [ -d $ramdisk ]; then
 		compression_type=$($file -m $magic ./ramdisk.* | $busybox cut -d: -f2 | $busybox cut -d" " -f2)
-		compression_ext=$compression_type
 		case $compression_type in
-			gzip) compression_warning=$compression_type; compression_repack=$gzip;;
-			xz) compression_warning=$compression_type; compression_repack="$xz -1 --check=crc32";;
-			lzma) compression_warning=$compression_type; compression_repack="$xz --format=lzma";;
-			lz4) compression_warning=$compression_type; compression_repack="$lz4 -l -9";;
-			lzop) compression_warning=$compression_type; compression_repack="$lzop -f -9";;
+			gzip) compression_warning=$compression_type; compression_ext=gzip; compression_repack=$gzip;;
+			XZ) compression_warning=$compression_type; compression_ext=xz; compression_repack="$xz -1 --check=crc32";;
+			LZMA) compression_warning=$compression_type; compression_ext=lzma; compression_repack="$xz --format=lzma";;
+			LZ4) compression_warning=$compression_type; compression_ext=lz4; compression_repack="$lz4 -l -9";;
+			lzop) compression_warning=$compression_type; compression_ext=lzop; compression_repack="$lzop -f -9";;
 		esac;
 		if [ -z $compression_warning ]; then
 			perr "\n****** HAZARD ******* HAZARD ******* HAZARD ******"
@@ -193,7 +192,7 @@ if [ ! -z $mkboot_from_dir ]; then
 			perr "\n****** HAZARD ******* HAZARD ******* HAZARD ******\n"
 			exit
 		fi	
-		if [ $compression_type != "gzip" ] && [ $compression_type != "lzma" ] && [ $compression_type != "lz4" ] && [ $compression_type != "lzop" ] && [ $compression_type != "xz" ]; then
+		if [ $compression_type != "gzip" ] && [ $compression_type != "LZMA" ] && [ $compression_type != "LZ4" ] && [ $compression_type != "lzop" ] && [ $compression_type != "XZ" ]; then
 			perr "\nRamdisk is unknown format. Can't repack ramdisk."
 			exit 0
 		else
@@ -403,15 +402,13 @@ compression_warning=$compression_type
 
 case $compression_type in
 	gzip) compression_type=$gzip; compression_ext=gz;;
-	xz) compression_type=$xz; compression_ext=xz;;
-	lzma) compression_type=$lzma; compression_ext=lzma;;
-	lz4) compression_ext=lz4; decomp_ramdisk="$lz4 -d"; extra="< ../ramdisk.cpio";;
-	lzop) compression_ext=lzop; decomp_ramdisk="$lzop -d";;
+	XZ) compression_type=$xz; compression_ext=xz;;
+	LZMA) compression_type=$lzma; compression_ext=lzma;;
+	LZ4) compression_type=$lz4; compression_ext=lz4;;
+	lzop) compression_type=$lzop; compression_ext=lzop;;
 esac;
 
-if [[ $compression_ext != lz4 ]]; then
-	decomp_ramdisk="$compression_type -d -c"
-fi
+decomp_ramdisk="$compression_type -d -c"
 decomp_ramdisk2="$cpio -i -d -m --no-absolute-filenames"
 
 if [ -z $compression_ext ]; then
@@ -421,7 +418,6 @@ if [ -z $compression_ext ]; then
 	perr "\n****** HAZARD ******* HAZARD ******* HAZARD ******\n"
 	exit
 fi
-
 $busybox mv ../ramdisk.gz ../ramdisk.$compression_ext # This is simply to remind the user if they view the folder afterwards
 pout "\nRamdisk is $compression_warning format."
 $decomp_ramdisk "../ramdisk.$compression_ext" | $decomp_ramdisk2 $extra
