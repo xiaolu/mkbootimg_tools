@@ -28,11 +28,12 @@ busybox=$(command -v busybox)
 od=$tooldir/od
 gzip=$tooldir/gzip
 lz4=$tooldir/lz4
+lzop=$tooldir/lzop
 lzma=$tooldir/lzma
 xz=$tooldir/xz # Also used for lzma compression
 grep=$tooldir/grep
 cpio=$tooldir/cpio
-magic=$tooldir/magic
+magic=$tooldir/magic.mgc
 file=$tooldir/file
 old_bootimg=true
 C_OUT="\033[0;1m"
@@ -133,17 +134,17 @@ mkboot_img() {
 	pout "\nKernel size: $kernel_size, new ramdisk size: $ramdisk_size, $($busybox basename $new_img): $boot_size."
 	pout "\n$($busybox basename $new_img) has been created.\n"
     
-# Check if new build is larger than original
-# Give caution if it is to insure size is not larger than the partition
-# A courtesy warning
-if [[ "$image_size" -lt "$boot_size" ]]; then
-	beefed_up=$(( $boot_size - $image_size ))
-	pcaut "\n****** CAUTION ******* CAUTION ******* CAUTION ******"
-	pout "\n$($busybox basename $new_img) is $beefed_up bytes larger than"
-	pout "the original build! Make sure this new"
-	pout "size is not larger than the actual partition!"
-	pcaut "\n****** CAUTION ******* CAUTION ******* CAUTION ******\n"
-fi
+	# Check if new build is larger than original
+	# Give caution if it is to insure size is not larger than the partition
+	# A courtesy warning
+	if [[ "$image_size" -lt "$boot_size" ]]; then
+		beefed_up=$(( $boot_size - $image_size ))
+		pcaut "\n****** CAUTION ******* CAUTION ******* CAUTION ******"
+		pout "\n$($busybox basename $new_img) is $beefed_up bytes larger than"
+		pout "the original build! Make sure this new"
+		pout "size is not larger than the actual partition!"
+		pcaut "\n****** CAUTION ******* CAUTION ******* CAUTION ******\n"
+	fi
 }
 
 #decide action
@@ -175,22 +176,15 @@ if [ ! -z $mkboot_from_dir ]; then
 	[ -z $second_size ] && second_size=0
 	[ -z $dtb_size ] && dtb_size=0
 
-	# Temporary solution for lzop compression
-	# Check for lzop magic (\x89\x4c\x5a\x4f\x00\x0d\x0a\x1a) before anything else
-	# TODO: Fix file and magic to properly read lzop
 	if [ -d $ramdisk ]; then
-		if $grep $'\x89\x4c\x5a\x4f\x00\x0d\x0a\x1a' ./ramdisk.* > /dev/null; then
-			compression_type=lzop
-		else
-			compression_type=$($file -m $magic ./ramdisk.* | $busybox cut -d: -f2 | $busybox cut -d" " -f2)
-		fi
+		compression_type=$($file -m $magic ./ramdisk.* | $busybox cut -d: -f2 | $busybox cut -d" " -f2)
 		compression_ext=$compression_type
 		case $compression_type in
 			gzip) compression_warning=$compression_type; compression_repack=$gzip;;
 			xz) compression_warning=$compression_type; compression_repack="$xz -1 --check=crc32";;
 			lzma) compression_warning=$compression_type; compression_repack="$xz --format=lzma";;
-			lz4) compression_warning=$compression_type; compression_repack="$lz4 -l";;
-			lzop) compression_warning=$compression_type; compression_repack="$busybox lzop";;
+			lz4) compression_warning=$compression_type; compression_repack="$lz4 -l -9";;
+			lzop) compression_warning=$compression_type; compression_repack="$lzop -f -9";;
 		esac;
 		if [ -z $compression_warning ]; then
 			perr "\n****** HAZARD ******* HAZARD ******* HAZARD ******"
@@ -404,14 +398,7 @@ $busybox printf "image_size=$image_size" >> img_info
 $busybox mkdir ramdisk
 cd ramdisk
 
-# Temporary solution for lzop compression
-# Check for lzop magic (\x89\x4c\x5a\x4f\x00\x0d\x0a\x1a) before anything else
-# TODO: Fix file and magic to properly read lzop
-if $grep $'\x89\x4c\x5a\x4f\x00\x0d\x0a\x1a' ../ramdisk.gz > /dev/null; then
-	compression_type=lzop
-else
-	compression_type=$($file -m $magic ../ramdisk.gz | $busybox cut -d: -f2 | $busybox cut -d" " -f2)
-fi;
+compression_type=$($file -m $magic ../ramdisk.gz | $busybox cut -d: -f2 | $busybox cut -d" " -f2)
 compression_warning=$compression_type
 
 case $compression_type in
@@ -419,7 +406,7 @@ case $compression_type in
 	xz) compression_type=$xz; compression_ext=xz;;
 	lzma) compression_type=$lzma; compression_ext=lzma;;
 	lz4) compression_ext=lz4; decomp_ramdisk="$lz4 -d"; extra="< ../ramdisk.cpio";;
-	lzop) compression_ext=lzop; decomp_ramdisk="$busybox lzop -d";;
+	lzop) compression_ext=lzop; decomp_ramdisk="$lzop -d";;
 esac;
 
 if [[ $compression_ext != lz4 ]]; then
