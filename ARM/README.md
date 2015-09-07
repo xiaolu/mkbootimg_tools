@@ -2,20 +2,14 @@
 
 2. All binaries are statically compiled using the arm-linux-androideabi and arm-linux-gnueabi toolchains.
 
-3. Move the bash binary to /system/xbin.
+3. Run the mkboot script and have fun (mkboot script is a shebang manipulator)
 
-4. The rest must remain in the project folder.
-
-NOTE: This project is designed to work on Android (ARM) devices, however, it will also work on Linux as well.
-	- For it to work on Linux all you have to do is: 
-	1. Open the mkboot script.
-	2. Change the shebang to /bin/bash.
-	3. Save the file and have fun.
+NOTE: This project (ARM) is designed to work on Android (ARM) devices, however, it will also work on Linux as well. Tested and confirmed working on Ubuntu 15.04.
 
 ### Unpack Boot.img or Recovery.img:
 	root@android:/data/local/tmp/mkbootimg_tool/ARM # ./mkboot boot.img bootfolder
 
-	Unpack & decompress boot.img to boot
+	Unpack & decompress boot.img to bootfolder
 
 	****** WARNING ******* WARNING ******* WARNING ******
 
