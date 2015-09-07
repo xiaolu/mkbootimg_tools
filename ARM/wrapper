@@ -391,7 +391,15 @@ kernel_size=$kernel_size\nramdisk_size=$ramdisk_size\n${secondb_size}\n${dt_size
 ramdisk_offset=$ramdisk_offset\nsecond_offset=$second_offset\ntags_offset=$tags_offset\nqcdt_offset=$qcdt_offset\ncmd_line=$cmd_line\n$liveboard\n" > img_info
 
 # Include original image size in bytes to img_info
-image_size=$($busybox stat -c "%s" '../'$1)
+# Allow script to read second command argument despite the path
+# This should help the script be allow to read images from another directory such as /sdcard/recovery.img, ~/sdcard/recovery.img or simply recovery.img if in the project directory itself
+if [ -f $1 ]; then
+	# Path to file exists outside of project directory
+	image_size=$($busybox stat -c "%s" $1)
+else
+	# Path to file exists in the project directory
+	image_size=$($busybox stat -c "%s" '../'$1)
+fi
 $busybox printf "image_size=$image_size" >> img_info
 
 $busybox mkdir ramdisk
