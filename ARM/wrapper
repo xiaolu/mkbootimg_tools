@@ -1,0 +1,435 @@
+#!bash
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+#boot.img tool
+#original author: xiaolu
+#heavily modified by: Modding.MyMind
+
+#set -x # for debugging
+
+trap "clean" 2 3 4
+workdir=$(pwd)
+toolpath=$(readlink -f $0)
+tooldir=$(dirname $toolpath)
+mkbootimg=$tooldir/mkbootimg
+mkbootfs=$tooldir/mkbootfs
+busybox=$(command -v busybox)
+od=$tooldir/od
+gzip=$tooldir/gzip
+lz4=$tooldir/lz4
+lzop=$tooldir/lzop
+lzma=$tooldir/lzma
+xz=$tooldir/xz # Also used for lzma compression
+grep=$tooldir/grep
+cpio=$tooldir/cpio
+magic=$tooldir/magic.mgc
+file=$tooldir/file
+old_bootimg=true
+C_OUT="\033[0;1m"
+C_ERR="\033[31;1m"
+C_CAUT="\033[33;1m"
+C_CLEAR="\033[0;0m"
+
+pout() {
+	$busybox printf "${C_OUT}${*}${C_CLEAR}\n"
+}
+perr() {
+	$busybox printf "${C_ERR}${*}${C_CLEAR}\n"
+}
+pcaut() {
+	$busybox printf "${C_CAUT}${*}${C_CLEAR}\n"
+}
+clean()
+{
+	$busybox rm -rf /tmp/mkboot.*
+	#pout "..."
+	exit
+}
+
+# Check for busybox
+if [ -z $busybox ]; then
+	clear; pcaut "Busybox is NOT installed!\nThis may cause issues with the script!\nUse at your own peril or install busybox!"; sleep 2
+fi
+
+usage() {
+	pcaut "\n<Unpack and Repack Image Tool>"
+	perr "Not enough parameters or parameter error!\n"
+	pout "Unpack Image & Decompress Ramdisk <Usage>: \n    $($busybox basename $0) [image] [output dir]"
+	pout "    $($busybox basename $0) boot.img project_folder\n"
+	pout "Repack Image & Compress Ramdisk <Usage>: \n    $($busybox basename $0) [unpacked dir] [new image]"
+	pout "    $($busybox basename $0) project_folder newboot.img\n"
+	clean
+}
+
+print_info() {
+	[[ $boot_magic_addr -gt 0 ]] && pout "  boot magic     : ANDROID!"
+	[[ $boot_magic_addr -gt 0 ]] && pout "  magic address  : $boot_magic   ($boot_magic_addr)"
+	[ ! -z "$board" ] && pout "  board          : $board"
+	pout "  kernel         : $kernel"
+	pout "  ramdisk        : $ramdisk"
+	pout "  page size      : $page_size"
+	pout "  kernel size    : $kernel_size"
+	pout "  ramdisk size   : $ramdisk_size"
+	[ ! -z $second_size ] && [ $second_size -gt 0 ] && \
+		pout "  second size    : $second_size"
+	[ $dtb_size -gt 0 ] && pout "  dtb size       : $dtb_size"
+	if [ ! -z $base_warning ]; then
+		pcaut "  base           : $base_addr   (Non Standard)"
+	else
+		pout "  base           : $base_addr"
+	fi
+	if [ ! -z $kernel_offset_warning ]; then
+		pcaut "  kernel offset  : $kernel_offset   (Non Standard)"
+	else
+		pout "  kernel offset  : $kernel_offset"
+	fi
+	if [ ! -z $ramdisk_offset_warning ]; then
+		pcaut "  ramdisk offset : $ramdisk_offset   (Non Standard)"
+	else
+		pout "  ramdisk offset : $ramdisk_offset"
+	fi
+	if [ ! -z $second_offset_warning ]; then
+		[ -z $second_offset ] || pcaut "  second offset  : $second_offset   (Non Standard)"
+	else
+		[ -z $second_offset ] || pout "  second offset  : $second_offset"
+	fi
+	if [ ! -z $tags_offset_warning ]; then
+		pcaut "  tags offset    : $tags_offset   (Non Standard)"
+	else
+		pout "  tags offset    : $tags_offset"
+	fi
+	[ $dtb_size -gt 0 ] && pout "  dtb offset     : $qcdt_offset"
+	[ $dtb_size -gt 0 ] && pout "  dtb img        : $dt"
+	[ $second_size -gt 0 ] && pout "  second img     : $second"
+	pout "  cmd line       : $cmd_line"
+}
+
+mkboot_img() {
+	error=0
+	[ $second_size -gt 0 ] && second="--second ${second}"
+	[ $dtb_size -gt 0 ] && dtb="--dt ${dt}"
+	[ ! -z $second_offset ] && second_offset="--second_offset ${second_offset}"
+	[ ! -z "$board" ] && board="--board $board"
+
+	$mkbootimg --kernel $kernel --ramdisk $ramdisk $board \
+	--base $base_addr --ramdisk_offset $ramdisk_offset \
+	--kernel_offset $kernel_offset $second_offset \
+	--tags_offset $tags_offset --cmdline "$cmd_line" \
+	--pagesize $page_size $second $dtb -o $new_img 2>/dev/null || error=1
+
+	[ $error -eq 1 ] && return $error
+	ramdisk_size=$($busybox stat -c "%s" $ramdisk)
+	boot_size=$($busybox stat -c "%s" $new_img)
+	pout "\nKernel size: $kernel_size, new ramdisk size: $ramdisk_size, $($busybox basename $new_img): $boot_size."
+	pout "\n$($busybox basename $new_img) has been created.\n"
+    
+	# Check if new build is larger than original
+	# Give caution if it is to insure size is not larger than the partition
+	# A courtesy warning
+	if [[ "$image_size" -lt "$boot_size" ]]; then
+		beefed_up=$(( $boot_size - $image_size ))
+		pcaut "\n****** CAUTION ******* CAUTION ******* CAUTION ******"
+		pout "\n$($busybox basename $new_img) is $beefed_up bytes larger than"
+		pout "the original build! Make sure this new"
+		pout "size is not larger than the actual partition!"
+		pcaut "\n****** CAUTION ******* CAUTION ******* CAUTION ******\n"
+	fi
+}
+
+#decide action
+[ $# -lt 2 ] || [ $# -gt 3 ] && usage
+if [ $# -eq 2 ] && [ -d $1 ]; then
+	mkboot_from_dir=1
+elif [ $# -eq 2 ] && [ -s $1 ]; then
+	split_boot_to_dir=1
+else
+	usage
+fi
+
+#mkboot_from_dir, img_info
+if [ ! -z $mkboot_from_dir ]; then
+	pout "\nmkbootimg from $1/img_info.\n"
+	unpacked_dir=$1
+	new_img=$2
+	cd $unpacked_dir
+	if [ ! -s img_info ]; then
+		perr "Missing img_info file! Can't rebuild $2."
+		clean
+	fi 
+	eval $(cat img_info)
+
+	if [ -z $kernel ] || [ -z $ramdisk ] || [ -z $base_addr ]; then
+		perr "Lacking parameters in img_info."
+		clean
+	fi
+	[ -z $second_size ] && second_size=0
+	[ -z $dtb_size ] && dtb_size=0
+
+	if [ -d $ramdisk ]; then
+		compression_type=$($file -m $magic ./ramdisk.* | $busybox cut -d: -f2 | $busybox cut -d" " -f2)
+		case $compression_type in
+			gzip) compression_warning=$compression_type; compression_ext=gzip; compression_repack=$gzip;;
+			XZ) compression_warning=$compression_type; compression_ext=xz; compression_repack="$xz -1 --check=crc32";;
+			LZMA) compression_warning=$compression_type; compression_ext=lzma; compression_repack="$xz --format=lzma";;
+			LZ4) compression_warning=$compression_type; compression_ext=lz4; compression_repack="$lz4 -l -9";;
+			lzop) compression_warning=$compression_type; compression_ext=lzop; compression_repack="$lzop -f -9";;
+		esac;
+		if [ -z $compression_warning ]; then
+			perr "\n****** HAZARD ******* HAZARD ******* HAZARD ******"
+			pout "\nRamdisk is $compression_type format. Can't repack ramdisk."
+			pout "This tool currently does not support $compression_type."
+			perr "\n****** HAZARD ******* HAZARD ******* HAZARD ******\n"
+			exit
+		fi	
+		if [ $compression_type != "gzip" ] && [ $compression_type != "LZMA" ] && [ $compression_type != "LZ4" ] && [ $compression_type != "lzop" ] && [ $compression_type != "XZ" ]; then
+			perr "\nRamdisk is unknown format. Can't repack ramdisk."
+			exit 0
+		else
+			# XZ GZIP LZMA LZ4 LZOP
+			$mkbootfs $ramdisk | $compression_repack > new_ramdisk.$compression_ext
+			ramdisk=new_ramdisk.$compression_ext
+			ramdisk_size=$($busybox stat -c "%s" $ramdisk)
+		fi
+	fi
+	#cd $unpacked_dir
+	print_info
+	$busybox rm -f $new_img
+	mkboot_img $new_img || perr "Make $new_img Error! pls check img_info file."
+	#pout "Add SEANDROIDENFORCE tag."
+	#printf SEANDROIDENFORCE >> $new_img
+	$busybox rm -f new_ramdisk.gz
+	clean
+fi
+
+#split boot.img to dir.
+if [ -e $2 ]; then
+	read -p "$2 exists, delete?(N/y)" reply
+	case $reply in
+		y | Y)
+		$busybox rm -rf $2
+		;;
+	*)
+		exit
+		;;
+	esac
+fi
+tempdir=$2
+$busybox  mkdir -p "$tempdir"
+pout "\nUnpack & decompress $1 to $2\n"
+
+#get boot.img info
+cp -f $1 $tempdir/
+cd $tempdir
+bootimg=$($busybox basename $1)
+# Find BOOT_MAGIC address in dec and hex
+boot_magic_addr=$($grep -abo ANDROID! $bootimg | $busybox cut -f 1 -d : | head -1)
+boot_magic=`printf 0x%08x $boot_magic_addr`
+# Find standard QCDT address in hex
+qcdt_addr=$($grep -abo QCDT $bootimg | $busybox cut -f 1 -d : | head -1)
+if [ ! -z $qcdt_addr ]; then
+	qcdt_addr=`printf 0x%x $qcdt_addr`
+fi
+[ -z $boot_magic_addr ] && clean
+if [ $boot_magic_addr -gt 0 ]; then
+	$busybox dd if=$bootimg of=bootimg bs=$boot_magic_addr skip=1 2>/dev/null
+	bootimg=bootimg
+fi
+
+kernel_addr=0x$($od -A n -X -j 12 -N 4 $bootimg | $busybox sed 's/ //g' | $busybox sed 's/^0*//g')
+ramdisk_addr=0x$($od -A n -X -j 20 -N 4 $bootimg | $busybox sed 's/ //g' | $busybox sed 's/^0*//g')
+second_addr=0x$($od -A n -X -j 28 -N 4 $bootimg | $busybox sed 's/ //g' | $busybox sed 's/^0*//g')
+tags_addr=0x$($od -A n -X -j 32 -N 4 $bootimg | $busybox sed 's/ //g' | $busybox sed 's/^0*//g')
+
+kernel_size=$($od -A n -D -j 8 -N 4 $bootimg | $busybox sed 's/ //g')
+#base_addr=0x$($od -A n -x -j 14 -N 2 $bootimg | $busybox sed 's/ //g')0000
+ramdisk_size=$($od -A n -D -j 16 -N 4 $bootimg | $busybox sed 's/ //g')
+second_size=$($od -A n -D -j 24 -N 4 $bootimg | $busybox sed 's/ //g')
+page_size=$($od -A n -D -j 36 -N 4 $bootimg | $busybox sed 's/ //g')
+dtb_size=$($od -A n -D -j 40 -N 4 $bootimg | $busybox sed 's/ //g')
+#cmd_line=$($od -A n --strings -j 64 -N 512 $bootimg)
+#board=$($od -A n --strings -j 48 -N 16 $bootimg)
+cmd_line=$($od -A n -S1 -j 64 -N 512 $bootimg)
+board=$($od -A n -S1 -j 48 -N 16 $bootimg)
+
+base_addr=$((kernel_addr-0x00008000))
+kernel_offset=$((kernel_addr-base_addr))
+ramdisk_offset=$((ramdisk_addr-base_addr))
+second_offset=$((second_addr-base_addr))
+tags_offset=$((tags_addr-base_addr))
+qcdt_offset=$((qcdt_addr-base_addr))
+
+base_addr=$(printf "%08x" $base_addr)
+kernel_offset=$(printf "%08x" $kernel_offset)
+ramdisk_offset=$(printf "%08x" $ramdisk_offset)
+second_offset=$(printf "%08x" $second_offset)
+tags_offset=$(printf "%08x" $tags_offset)
+qcdt_offset=$(printf "%08x" $qcdt_offset)
+
+base_addr=0x${base_addr:0-8}
+kernel_offset=0x${kernel_offset:0-8}
+ramdisk_offset=0x${ramdisk_offset:0-8}
+second_offset=0x${second_offset:0-8}
+tags_offset=0x${tags_offset:0-8}
+qcdt_offset=0x${qcdt_offset:0-8}
+
+#########################################################
+# BELOW SECTION HANDLES NON STANDARD IMAGES
+
+if [ $base_addr != 0x10000000 ]; then
+	base_warning=$base_addr
+fi
+
+if [ $kernel_offset != 0x00008000 ]; then
+	kernel_offset_warning=$kernel_offset
+fi
+
+if [ $ramdisk_offset != 0x01000000 ]; then
+	ramdisk_offset_warning=$ramdisk_offset
+fi
+
+if [ $second_offset != 0x00f00000 ]; then
+	second_offset_warning=$second_offset
+fi
+
+if [ $tags_offset != 0x00000100 ]; then
+	tags_offset_warning=$tags_offset
+fi
+
+# Below are the known offsets for non standard mkbootimg.c
+if [[ ! -z $base_warning ]] || [[ ! -z $kernel_offset_warning ]] || [[ ! -z $ramdisk_offset_warning ]] || [[ ! -z $second_offset_warning ]] || [[ ! -z $tags_offset_warning ]]; then
+	perr "****** WARNING ******* WARNING ******* WARNING ******\n"
+	pout "This image is built using NON-standard mkbootimg!\n"
+fi
+if [ ! -z $base_warning ]; then
+	pout "BASE is $base_warning"
+fi
+if [ ! -z $kernel_offset_warning ]; then
+	pout "KERNEL_OFFSET is $kernel_offset_warning"
+fi
+if [ ! -z $ramdisk_offset_warning ]; then
+	pout "RAMDISK_OFFSET is $ramdisk_offset_warning"
+fi
+if [ ! -z $second_offset_warning ]; then
+	pout "SECOND_OFFSET is $second_offset_warning"
+fi
+if [ ! -z $tags_offset_warning ]; then
+	pout "TAGS_OFFSET is $tags_offset_warning"
+fi
+if [[ ! -z $base_warning ]] || [[ ! -z $kernel_offset_warning ]] || [[ ! -z $ramdisk_offset_warning ]] || [[ ! -z $second_offset_warning ]] || [[ ! -z $tags_offset_warning ]]; then
+	pout "\nYou can modify mkbootimg.c with the above value(s)"
+	perr "\n****** WARNING ******* WARNING ******* WARNING ******\n"
+fi
+
+# ABOVE SECTION HANDLES NON STANDARD IMAGES
+#########################################################
+
+k_count=$(((kernel_size+page_size-1)/page_size))
+r_count=$(((ramdisk_size+page_size-1)/page_size))
+s_count=$(((second_size+page_size-1)/page_size))
+d_count=$(((dtb_size+page_size-1)/page_size))
+k_offset=1
+r_offset=$((k_offset+k_count))
+s_offset=$((r_offset+r_count))
+d_offset=$((s_offset+s_count))
+
+#zImage
+$busybox dd if=$bootimg of=zImage_tmp bs=$page_size skip=$k_offset count=$k_count 2>/dev/null
+$busybox dd if=zImage_tmp of=zImage bs=$kernel_size count=1 2>/dev/null
+
+#ramdisk.gz
+$busybox dd if=$bootimg of=ramdisk_tmp bs=$page_size skip=$r_offset count=$r_count 2>/dev/null
+$busybox dd if=ramdisk_tmp of=ramdisk.gz bs=$ramdisk_size count=1 2>/dev/null
+
+#second image
+if [ $second_size -gt 0 ]; then
+	$busybox dd if=$bootimg of=second.img_tmp bs=$page_size skip=$s_offset count=$s_count 2>/dev/null
+	$busybox dd if=second.img_tmp of=second.img bs=$second_size count=1 2>/dev/null
+	second="$tempdir/second.img"
+	second=$($busybox basename $second)
+	secondb_name="second=$second"
+	secondb_size="second_size=$second_size"
+fi
+
+#dtb
+if [ $dtb_size -gt 0 ]; then
+	$busybox dd if=$bootimg of=dt.img_tmp bs=$page_size skip=$d_offset count=$d_count 2>/dev/null
+	$busybox dd if=dt.img_tmp of=dt.img bs=$dtb_size count=1 2>/dev/null
+	dt="$tempdir/dt.img"
+	dt=$($busybox basename $dt)
+	dt_name="dt=$dt"
+	dt_size="dtb_size=$dtb_size"
+fi
+$busybox rm -f *_tmp $($busybox basename $1) $bootimg
+
+kernel=zImage
+ramdisk=ramdisk
+[ ! -s $kernel ] && clean
+#print boot.img info
+print_info
+
+# Properly escape double quotes
+# Keep double quotes intact
+cmd_line=$(echo $cmd_line | sed -e "s/'/'\\\\''/g; 1s/^/'/; \$s/\$/'/")
+
+#write info to img_info,decompression ramdisk.gz
+
+[ ! -z "$board" ] && liveboard="board=\"$board\""
+
+$busybox printf "kernel=zImage\nramdisk=ramdisk\n${secondb_name}\n${dt_name}\npage_size=$page_size\n\
+kernel_size=$kernel_size\nramdisk_size=$ramdisk_size\n${secondb_size}\n${dt_size}\nbase_addr=$base_addr\nkernel_offset=$kernel_offset\n\
+ramdisk_offset=$ramdisk_offset\nsecond_offset=$second_offset\ntags_offset=$tags_offset\nqcdt_offset=$qcdt_offset\ncmd_line=$cmd_line\n$liveboard\n" > img_info
+
+# Include original image size in bytes to img_info
+# Allow script to read second command argument despite the path
+# This should help the script be allow to read images from another directory such as /sdcard/recovery.img, ~/sdcard/recovery.img or simply recovery.img if in the project directory itself
+if [ -f $1 ]; then
+	# Path to file exists outside of project directory
+	image_size=$($busybox stat -c "%s" $1)
+else
+	# Path to file exists in the project directory
+	image_size=$($busybox stat -c "%s" '../'$1)
+fi
+$busybox printf "image_size=$image_size" >> img_info
+
+$busybox mkdir ramdisk
+cd ramdisk
+
+compression_type=$($file -m $magic ../ramdisk.gz | $busybox cut -d: -f2 | $busybox cut -d" " -f2)
+compression_warning=$compression_type
+
+case $compression_type in
+	gzip) compression_type=$gzip; compression_ext=gz;;
+	XZ) compression_type=$xz; compression_ext=xz;;
+	LZMA) compression_type=$lzma; compression_ext=lzma;;
+	LZ4) compression_type=$lz4; compression_ext=lz4;;
+	lzop) compression_type=$lzop; compression_ext=lzop;;
+esac;
+
+decomp_ramdisk="$compression_type -d -c"
+decomp_ramdisk2="$cpio -i -d -m --no-absolute-filenames"
+
+if [ -z $compression_ext ]; then
+	perr "\n****** HAZARD ******* HAZARD ******* HAZARD ******"
+	pout "\nRamdisk is $compression_warning format. Can't unpack ramdisk."
+	pout "This tool currently does not support $compression_warning."
+	perr "\n****** HAZARD ******* HAZARD ******* HAZARD ******\n"
+	exit
+fi
+$busybox mv ../ramdisk.gz ../ramdisk.$compression_ext # This is simply to remind the user if they view the folder afterwards
+pout "\nRamdisk is $compression_warning format."
+$decomp_ramdisk "../ramdisk.$compression_ext" | $decomp_ramdisk2 $extra
+
+#Unpack Finish to exit.
+pout "Unpack completed.\n"
+exit
