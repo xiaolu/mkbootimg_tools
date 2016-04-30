@@ -1,8 +1,14 @@
 mkbootimg_tools
 ===============
 
-### Unpack and repack boot.img,support dtb(dt.img):
-		xiaolu@xiaolu-ubuntu64:~/e330s$ mkboot recoveryksuamg5.img ksuamg
+HOW TO USE:
+-----------
+
+### Unpack boot/recovery(.img) support dtb(dt.img):
+		./mkboot name.img namefolderout
+
+	EXAMPLE
+		./mkboot recoveryksuamg5.img ksuamg
 		Unpack & decompress recoveryksuamg5.img to ksuamg
 		  kernel         : /home/xiaolu/work/initramfs/s4/e330s/ksuamg5/zImage
 		  ramdisk        : /home/xiaolu/work/initramfs/s4/e330s/ksuamg5/ramdisk.gz
@@ -19,7 +25,11 @@ mkbootimg_tools
 		  cmdline        : console=null androidboot.hardware=qcom user_debug=31 maxcpus=2 msm_rtb.filter=0x3F
 		Unpack completed.
 
-		xiaolu@xiaolu-ubuntu64:~/e330s$ mkboot ksuamg5 recovery.img
+### Repack boot/recovery(.img) support dtb(dt.img):
+		./mkboot namefolderout newimgname.img
+
+	EXAMPLE
+		./mkboot ksuamg5 recovery.img
 		mkbootimg from ksuamg5/img_info.
 		  kernel         : /home/xiaolu/work/initramfs/s4/e330s/ksuamg5/zImage
 		  ramdisk        : /home/xiaolu/work/initramfs/s4/e330s/ksuamg5/new_ramdisk.gz
@@ -40,7 +50,10 @@ mkbootimg_tools
 		...
 
 ### Create a dt.img:
-		xiaolu@xiaolu-ubuntu64:/media/diskd/kernel/SHV-E330S_JB_Opensource/Kernel$ scripts/dtbTool -s 2048 -o arch/arm/boot/dt.img -p scripts/dtc/ arch/arm/boot/
+		yourkernelsources/scripts/dtbTool -s 2048 -o arch/arm/boot/dt.img -p scripts/dtc/ arch/arm/boot/
+
+	EXAMPLE
+		SHV-E330S_JB_Opensource/Kernel$ scripts/dtbTool -s 2048 -o arch/arm/boot/dt.img -p scripts/dtc/ arch/arm/boot/
 		DTB combiner:
 		  Input directory: '/media/diskd/kernel/SHV-E330S_JB_Opensource/Kernel/arch/arm/boot/'
 		  Output file: '/media/diskd/kernel/SHV-E330S_JB_Opensource/Kernel/arch/arm/boot/dt.img'
