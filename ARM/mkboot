@@ -3,7 +3,8 @@
 
 target=$(pwd)
 script="${target}/wrapper"
-shebang=$(head -1 "$script")
+busybox=$(command -v busybox)
+shebang=$($busybox head -1 "$script")
 buildit="$@"
 
 # Use an array in case a argument is there too
