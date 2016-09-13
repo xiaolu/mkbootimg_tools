@@ -21,10 +21,10 @@
 trap "clean" 2 3 4
 workdir=$(pwd)
 toolpath=$(readlink -f $0)
-tooldir=$(dirname $toolpath)
+busybox=$(command -v busybox)
+tooldir=$($busybox dirname $toolpath)
 mkbootimg=$tooldir/mkbootimg
 mkbootfs=$tooldir/mkbootfs
-busybox=$(command -v busybox)
 od=$tooldir/od
 gzip=$tooldir/gzip
 lz4=$tooldir/lz4
@@ -233,10 +233,10 @@ cp -f $1 $tempdir/
 cd $tempdir
 bootimg=$($busybox basename $1)
 # Find BOOT_MAGIC address in dec and hex
-boot_magic_addr=$($grep -abo ANDROID! $bootimg | $busybox cut -f 1 -d : | head -1)
+boot_magic_addr=$($grep -abo ANDROID! $bootimg | $busybox cut -f 1 -d : | $busybox head -1)
 boot_magic=`printf 0x%08x $boot_magic_addr`
 # Find standard QCDT address in hex
-qcdt_addr=$($grep -abo QCDT $bootimg | $busybox cut -f 1 -d : | head -1)
+qcdt_addr=$($grep -abo QCDT $bootimg | $busybox cut -f 1 -d : | $busybox head -1)
 if [ ! -z $qcdt_addr ]; then
 	qcdt_addr=`printf 0x%x $qcdt_addr`
 fi
@@ -380,7 +380,7 @@ print_info
 
 # Properly escape double quotes
 # Keep double quotes intact
-cmd_line=$(echo $cmd_line | sed -e "s/'/'\\\\''/g; 1s/^/'/; \$s/\$/'/")
+cmd_line=$(echo $cmd_line | $busybox sed -e "s/'/'\\\\''/g; 1s/^/'/; \$s/\$/'/")
 
 #write info to img_info,decompression ramdisk.gz
 
