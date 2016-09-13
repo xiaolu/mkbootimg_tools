@@ -21,10 +21,10 @@
 trap "clean" 2 3 4
 workdir=$(pwd)
 toolpath=$(readlink -f $0)
-tooldir=$(dirname $toolpath)
+busybox=$(command -v busybox)
+tooldir=$($busybox dirname $toolpath)
 mkbootimg=$tooldir/mkbootimg
 mkbootfs=$tooldir/mkbootfs
-busybox=$(command -v busybox)
 od=$tooldir/od
 gzip=$tooldir/gzip
 lz4=$tooldir/lz4
