@@ -1,0 +1,23 @@
+isSystemServer=true domain=system_server
+user=system seinfo=platform domain=system_app type=system_app_data_file
+user=bluetooth seinfo=platform domain=bluetooth type=bluetooth_data_file
+user=nfc seinfo=platform domain=nfc type=nfc_data_file
+user=radio seinfo=platform domain=radio type=radio_data_file
+user=shared_relro domain=shared_relro
+user=shell seinfo=platform domain=shell type=shell_data_file
+user=_isolated domain=isolated_app levelFrom=user
+user=_app seinfo=platform domain=platform_app type=app_data_file levelFrom=user
+user=_app isAutoPlayApp=true domain=autoplay_app type=autoplay_data_file levelFrom=all
+user=_app isPrivApp=true domain=priv_app type=app_data_file levelFrom=user
+user=_app domain=untrusted_app type=app_data_file levelFrom=user
+user=gps domain=location_app type=location_app_data_file
+user=system seinfo=platform name=com.qualcomm.services.location domain=location_app type=location_app_data_file
+user=system seinfo=platform name=com.qualcomm.location.XT domain=location_app type=location_app_data_file
+user=system seinfo=platform name=com.qualcomm.qti.auth.fidocryptoservice domain=qsee_svc_app type=qsee_svc_app_data_file
+user=system seinfo=platform name=com.qualcomm.qti.auth.fidosuiservice domain=qsee_svc_app type=qsee_svc_app_data_file
+user=system seinfo=platform name=com.qualcomm.qti.securemsm.mdtp.MdtpService domain=mdtpservice_app type=mdtp_svc_app_data_file
+user=system seinfo=platform name=.dataservices domain=dataservice_app type=system_app_data_file
+user=_app seinfo=platform name=com.qualcomm.location.qvtester domain=location_app type=location_app_data_file
+user=_app seinfo=platform name=com.qualcomm.qct.dlt domain=location_app type=location_app_data_file
+user=system seinfo=platform name=com.qualcomm.qti.auth.securesampleauthservice domain=qsee_svc_app type=qsee_svc_app_data_file
+user=system seinfo=platform name=com.qualcomm.qti.auth.secureextauthservice domain=qsee_svc_app type=qsee_svc_app_data_file

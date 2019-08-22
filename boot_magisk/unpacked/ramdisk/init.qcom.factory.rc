@@ -1,0 +1,110 @@
+#
+# Copyright (c) 2009-2016, The Linux Foundation. All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#     * Redistributions of source code must retain the above copyright
+#       notice, this list of conditions and the following disclaimer.
+#     * Redistributions in binary form must reproduce the above copyright
+#       notice, this list of conditions and the following disclaimer in the
+#       documentation and/or other materials provided with the distribution.
+#     * Neither the name of The Linux Foundation nor
+#       the names of its contributors may be used to endorse or promote
+#       products derived from this software without specific prior written
+#       permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+# NON-INFRINGEMENT ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+# EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+# OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+# WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+# OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+# ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+
+# Define fastmmi
+service fastmmi /system/bin/mmi
+    user root
+    group root
+    disabled
+
+service versiond /system/bin/versiond
+    user root
+    disabled
+    oneshot
+    
+on property:sys.boot_mode=ffbm
+    write -p /dev/block /dev/block/bootdevice/by-name/misc "ffbm-01"
+
+on property:sys.boot_mode=normal
+    write -p /dev/block /dev/block/bootdevice/by-name/misc "normal"
+
+# Creating a scratch storage on /data for factory testing.
+on factory-fs
+    mount tmpfs tmpfs /data
+
+on mmi
+    # ========================================================
+    #              This is FFBM only settings.
+    # ========================================================
+    #mkdir for factory data files.
+    mkdir /cache/FTM_AP 0750 root root
+
+    #set property for sys.usb.config
+    setprop sys.usb.config diag,serial_smd,serial_tty,rmnet_ipa,adb
+
+    #Start the following services needed for fftm
+    start qcom-usb-sh
+    start logd
+    start debuggerd
+    start debuggerd64
+    start servicemanager
+    start surfaceflinger
+    start per_mgr
+    start qcom-sh
+    start ril-daemon
+    start config_bluetooth
+    start sensors
+    start media
+    start fastmmi
+    start wcnss-service
+    start qcom-post-boot
+    start rmt_storage
+    start qcom-c_main-sh
+    start irsc_util
+    start qcamerasvr
+    start qcomsysd
+    start ptt_ffbm
+    start versiond
+    start tftp_server
+
+    #zach@ 20161018	Add this line to fix the BT FFBM test issue.
+    start ftmd
+    start lct_diag
+
+on ffbm
+    trigger early-fs
+    trigger factory-fs
+    trigger fs
+    trigger post-fs
+
+    # Load properties from /system/ + /factory after fs mount. Place
+    # this in another action so that the load will be scheduled after the prior
+    # issued fs triggers have completed.
+    trigger load_system_props_action
+
+    # Now we can mount /data. File encryption requires keymaster to decrypt
+    # /data, which in turn can only be loaded when system properties are present
+    trigger post-fs-data
+    trigger load_persist_props_action
+
+    # Remove a file to wake up anything waiting for firmware.
+    trigger firmware_mounts_complete
+
+    trigger early-boot
+    trigger boot
+    trigger mmi

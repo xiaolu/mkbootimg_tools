@@ -1,0 +1,14 @@
+# earliest possible SuperSU daemon launch, with fallback to service
+on post-fs-data
+    exec u:r:supersu:s0 root root -- /sbin/launch_daemonsu.sh post-fs-data
+
+# mount /data/su.img to /su
+on property:sukernel.mount=1
+    mount ext4 loop@/data/su.img /su noatime
+
+# launch SuperSU daemon
+service daemonsu /sbin/launch_daemonsu.sh service
+    class late_start
+    user root
+    seclabel u:r:supersu:s0
+    oneshot
