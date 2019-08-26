@@ -1,0 +1,262 @@
+#line 1 "system/sepolicy/service_contexts"
+accessibility                             u:object_r:accessibility_service:s0
+account                                   u:object_r:account_service:s0
+activity                                  u:object_r:activity_service:s0
+alarm                                     u:object_r:alarm_service:s0
+android.os.UpdateEngineService            u:object_r:update_engine_service:s0
+android.security.keystore                 u:object_r:keystore_service:s0
+android.service.gatekeeper.IGateKeeperService    u:object_r:gatekeeper_service:s0
+appops                                    u:object_r:appops_service:s0
+appwidget                                 u:object_r:appwidget_service:s0
+assetatlas                                u:object_r:assetatlas_service:s0
+audio                                     u:object_r:audio_service:s0
+backup                                    u:object_r:backup_service:s0
+batteryproperties                         u:object_r:batteryproperties_service:s0
+batterystats                              u:object_r:batterystats_service:s0
+battery                                   u:object_r:battery_service:s0
+bluetooth_manager                         u:object_r:bluetooth_manager_service:s0
+bluetooth                                 u:object_r:bluetooth_service:s0
+carrier_config                            u:object_r:radio_service:s0
+clipboard                                 u:object_r:clipboard_service:s0
+com.android.net.IProxyService             u:object_r:IProxyService_service:s0
+commontime_management                     u:object_r:commontime_management_service:s0
+common_time.clock                         u:object_r:mediaserver_service:s0
+common_time.config                        u:object_r:mediaserver_service:s0
+connectivity                              u:object_r:connectivity_service:s0
+connmetrics                               u:object_r:connmetrics_service:s0
+consumer_ir                               u:object_r:consumer_ir_service:s0
+content                                   u:object_r:content_service:s0
+contexthub_service                        u:object_r:contexthub_service:s0
+country_detector                          u:object_r:country_detector_service:s0
+cpuinfo                                   u:object_r:cpuinfo_service:s0
+dbinfo                                    u:object_r:dbinfo_service:s0
+device_policy                             u:object_r:device_policy_service:s0
+deviceidle                                u:object_r:deviceidle_service:s0
+devicestoragemonitor                      u:object_r:devicestoragemonitor_service:s0
+diskstats                                 u:object_r:diskstats_service:s0
+display.qservice                          u:object_r:surfaceflinger_service:s0
+display                                   u:object_r:display_service:s0
+netd_listener                             u:object_r:netd_listener_service:s0
+DockObserver                              u:object_r:DockObserver_service:s0
+dreams                                    u:object_r:dreams_service:s0
+drm.drmManager                            u:object_r:drmserver_service:s0
+dropbox                                   u:object_r:dropbox_service:s0
+ethernet                                  u:object_r:ethernet_service:s0
+fingerprint                               u:object_r:fingerprint_service:s0
+android.hardware.fingerprint.IFingerprintDaemon u:object_r:fingerprintd_service:s0
+gfxinfo                                   u:object_r:gfxinfo_service:s0
+graphicsstats                             u:object_r:graphicsstats_service:s0
+gpu                                       u:object_r:gpu_service:s0
+hardware                                  u:object_r:hardware_service:s0
+hardware_properties                       u:object_r:hardware_properties_service:s0
+hdmi_control                              u:object_r:hdmi_control_service:s0
+inputflinger                              u:object_r:inputflinger_service:s0
+input_method                              u:object_r:input_method_service:s0
+input                                     u:object_r:input_service:s0
+iphonesubinfo_msim                        u:object_r:radio_service:s0
+iphonesubinfo2                            u:object_r:radio_service:s0
+iphonesubinfo                             u:object_r:radio_service:s0
+ims                                       u:object_r:radio_service:s0
+imms                                      u:object_r:imms_service:s0
+isms_msim                                 u:object_r:radio_service:s0
+isms2                                     u:object_r:radio_service:s0
+isms                                      u:object_r:radio_service:s0
+isub                                      u:object_r:radio_service:s0
+jobscheduler                              u:object_r:jobscheduler_service:s0
+launcherapps                              u:object_r:launcherapps_service:s0
+location                                  u:object_r:location_service:s0
+lock_settings                             u:object_r:lock_settings_service:s0
+media.audio_flinger                       u:object_r:audioserver_service:s0
+media.audio_policy                        u:object_r:audioserver_service:s0
+media.camera                              u:object_r:cameraserver_service:s0
+media.camera.proxy                        u:object_r:cameraproxy_service:s0
+media.log                                 u:object_r:audioserver_service:s0
+media.player                              u:object_r:mediaserver_service:s0
+media.extractor                           u:object_r:mediaextractor_service:s0
+media.codec                               u:object_r:mediacodec_service:s0
+media.resource_manager                    u:object_r:mediaserver_service:s0
+media.radio                               u:object_r:audioserver_service:s0
+media.sound_trigger_hw                    u:object_r:audioserver_service:s0
+media.drm                                 u:object_r:mediadrmserver_service:s0
+media_projection                          u:object_r:media_projection_service:s0
+media_resource_monitor                    u:object_r:media_session_service:s0
+media_router                              u:object_r:media_router_service:s0
+media_session                             u:object_r:media_session_service:s0
+meminfo                                   u:object_r:meminfo_service:s0
+midi                                      u:object_r:midi_service:s0
+mount                                     u:object_r:mount_service:s0
+netd                                      u:object_r:netd_service:s0
+netpolicy                                 u:object_r:netpolicy_service:s0
+netstats                                  u:object_r:netstats_service:s0
+network_management                        u:object_r:network_management_service:s0
+network_score                             u:object_r:network_score_service:s0
+network_time_update_service               u:object_r:network_time_update_service:s0
+nfc                                       u:object_r:nfc_service:s0
+notification                              u:object_r:notification_service:s0
+otadexopt                                 u:object_r:otadexopt_service:s0
+package                                   u:object_r:package_service:s0
+permission                                u:object_r:permission_service:s0
+persistent_data_block                     u:object_r:persistent_data_block_service:s0
+phone_msim                                u:object_r:radio_service:s0
+phone1                                    u:object_r:radio_service:s0
+phone2                                    u:object_r:radio_service:s0
+phone                                     u:object_r:radio_service:s0
+pinner                                    u:object_r:pinner_service:s0
+power                                     u:object_r:power_service:s0
+print                                     u:object_r:print_service:s0
+processinfo                               u:object_r:processinfo_service:s0
+procstats                                 u:object_r:procstats_service:s0
+radio.phonesubinfo                        u:object_r:radio_service:s0
+radio.phone                               u:object_r:radio_service:s0
+radio.sms                                 u:object_r:radio_service:s0
+recovery                                  u:object_r:recovery_service:s0
+restrictions                              u:object_r:restrictions_service:s0
+rttmanager                                u:object_r:rttmanager_service:s0
+samplingprofiler                          u:object_r:samplingprofiler_service:s0
+scheduling_policy                         u:object_r:scheduling_policy_service:s0
+search                                    u:object_r:search_service:s0
+sensorservice                             u:object_r:sensorservice_service:s0
+serial                                    u:object_r:serial_service:s0
+servicediscovery                          u:object_r:servicediscovery_service:s0
+shortcut                                  u:object_r:shortcut_service:s0
+simphonebook_msim                         u:object_r:radio_service:s0
+simphonebook2                             u:object_r:radio_service:s0
+simphonebook                              u:object_r:radio_service:s0
+sip                                       u:object_r:radio_service:s0
+soundtrigger                              u:object_r:voiceinteraction_service:s0
+statusbar                                 u:object_r:statusbar_service:s0
+SurfaceFlinger                            u:object_r:surfaceflinger_service:s0
+task                                      u:object_r:task_service:s0
+telecom                                   u:object_r:telecom_service:s0
+telephony.registry                        u:object_r:registry_service:s0
+textservices                              u:object_r:textservices_service:s0
+trust                                     u:object_r:trust_service:s0
+tv_input                                  u:object_r:tv_input_service:s0
+uimode                                    u:object_r:uimode_service:s0
+updatelock                                u:object_r:updatelock_service:s0
+usagestats                                u:object_r:usagestats_service:s0
+usb                                       u:object_r:usb_service:s0
+user                                      u:object_r:user_service:s0
+vibrator                                  u:object_r:vibrator_service:s0
+voiceinteraction                          u:object_r:voiceinteraction_service:s0
+vrmanager                                 u:object_r:vr_manager_service:s0
+wallpaper                                 u:object_r:wallpaper_service:s0
+webviewupdate                             u:object_r:webviewupdate_service:s0
+wifip2p                                   u:object_r:wifip2p_service:s0
+wifiscanner                               u:object_r:wifiscanner_service:s0
+wifi                                      u:object_r:wifi_service:s0
+window                                    u:object_r:window_service:s0
+*                                         u:object_r:default_android_service:s0
+#line 1 "out/target/product/msm8937_64/obj/ETC/sectxfile_nl_intermediates/sectxfile_nl"
+
+#line 1 "device/qcom/sepolicy/common/service_contexts"
+android.apps.IQfpService                       u:object_r:iqfp_service:s0
+AtCmdFwd                                       u:object_r:atfwd_service:s0
+dpmservice                                     u:object_r:dpmservice:s0
+listen.service                                 u:object_r:mediaserver_service:s0
+cneservice                                     u:object_r:cne_service:s0
+gbahttpauth                                    u:object_r:gba_auth_service:s0
+vendor.qcom.PeripheralManager                  u:object_r:per_mgr_service:s0
+com.qualcomm.qti.auth.fidocryptodaemon         u:object_r:fidodaemon_service:s0
+com.qualcomm.qti.qseeproxy                     u:object_r:qseeproxy_service:s0
+wbc_service                                    u:object_r:wbc_service:s0
+dun                                            u:object_r:dun_service:s0
+qti.ims.connectionmanagerservice               u:object_r:imscm_service:s0
+com.qti.snapdragon.sdk.display.IColorService   u:object_r:color_service:s0
+improveTouch.TouchService                      u:object_r:improve_touch_service:s0
+improveTouch.TouchManagerService               u:object_r:improve_touch_service:s0
+improveTouch.GestureManagerService             u:object_r:improve_touch_service:s0
+improveTouch.HandBiometricManagerService       u:object_r:improve_touch_service:s0
+wfdservice                                     u:object_r:wfdservice_service:s0
+DigitalPen                                     u:object_r:usf_service:s0
+dts_eagle_service                              u:object_r:dtseagleservice_service:s0
+wfd.native.mm.service                          u:object_r:wfdservice_service:s0
+extphone                                       u:object_r:radio_service:s0
+qti.ims.ext                                    u:object_r:radio_service:s0
+com.qualcomm.location.izat.IzatService         u:object_r:izat_service:s0
+com.qualcomm.qti.secota.service.SecotaNService u:object_r:secotad_service:s0
+qti.security.seemp                             u:object_r:seemp_service:s0
+seempservice                                   u:object_r:seemp_service:s0
+mdtp                                           u:object_r:mdtpdaemon_service:s0
+qtitetherservice                               u:object_r:qtitetherservice_service:s0
+com.qualcomm.qti.seemp.health                  u:object_r:seemp_health_daemon_service:s0
+uce                                            u:object_r:uce_service:s0
+eSEPowerManagerService                         u:object_r:esepmdaemon_service:s0
+wigigp2p                                       u:object_r:wigigp2p_service:s0
+wigig                                          u:object_r:wigig_service:s0
+
+#add for goodix
+goodix.fp                                 u:object_r:gx_fpd_service:s0
+fm_fingerprint_service                    u:object_r:fm_fingerprint_service:s0
+# DOLBY_START
+media.dolby_memoryservice                      u:object_r:audioserver_service:s0
+# DOLBY_END
+enrichrcsservice                               u:object_r:radio_service:s0
+#line 1 "out/target/product/msm8937_64/obj/ETC/sectxfile_nl_intermediates/sectxfile_nl"
+
+#line 1 "device/qcom/sepolicy/test/service_contexts"
+# Copyright (c) 2015, The Linux Foundation. All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are
+# met:
+#     * Redistributions of source code must retain the above copyright
+#       notice, this list of conditions and the following disclaimer.
+#     * Redistributions in binary form must reproduce the above
+#       copyright notice, this list of conditions and the following
+#       disclaimer in the documentation and/or other materials provided
+#       with the distribution.
+#     * Neither the name of The Linux Foundation nor the names of its
+#       contributors may be used to endorse or promote products derived
+#       from this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED
+# WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT
+# ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS
+# BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
+# BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+# WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
+# OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
+# IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+com.qualcomm.qti.auth.securesampleauthdaemon   u:object_r:fidotest_service:s0
+com.qualcomm.qti.qseeproxysample               u:object_r:qseeproxysample_service:s0
+
+#line 1 "out/target/product/msm8937_64/obj/ETC/sectxfile_nl_intermediates/sectxfile_nl"
+
+#line 1 "device/qcom/sepolicy/msm8937/service_contexts"
+# Copyright (c) 2016, The Linux Foundation. All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are
+# met:
+#     * Redistributions of source code must retain the above copyright
+#       notice, this list of conditions and the following disclaimer.
+#     * Redistributions in binary form must reproduce the above
+#       copyright notice, this list of conditions and the following
+#       disclaimer in the documentation and/or other materials provided
+#       with the distribution.
+#     * Neither the name of The Linux Foundation nor the names of its
+#       contributors may be used to endorse or promote products derived
+#       from this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED
+# WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT
+# ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS
+# BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
+# BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+# WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
+# OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
+# IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+# Regionalization service
+regionalization                                       u:object_r:regionalization_service:s0
+apppc                                     u:object_r:apppc_service:s0
+#line 1 "out/target/product/msm8937_64/obj/ETC/sectxfile_nl_intermediates/sectxfile_nl"
+

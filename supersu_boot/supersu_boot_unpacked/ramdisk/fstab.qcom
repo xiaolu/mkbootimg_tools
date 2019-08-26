@@ -1,0 +1,18 @@
+# Android fstab file.
+# The filesystem that contains the filesystem checker binary (typically /system) cannot
+# specify MF_CHECK, and must come before any filesystems that do specify MF_CHECK
+
+#TODO: Add 'check' as fs_mgr_flags with data partition.
+# Currently we dont have e2fsck compiled. So fs check would failed.
+
+#<src>                                                <mnt_point>  <type>  <mnt_flags and options>                     <fs_mgr_flags>
+/dev/block/bootdevice/by-name/system         /system      ext4    ro,noatime,barrier=1,discard                                wait, verify
+# zhufanghua@longcheer.com
+#/dev/block/bootdevice/by-name/userdata       /data        ext4    nosuid,nodev,barrier=1,noauto_da_alloc,discard      wait,resize,encryptable=footer
+#caoyang_20170327 [CTS][CtsSecurityTestCases][testEncryption] default encrypt change : encryptable=footer  -> forceencrypt=footer
+/dev/block/bootdevice/by-name/userdata       /data        ext4    nosuid,nodev,barrier=1,noauto_da_alloc,discard      wait,resize,encryptable=footer
+/devices/soc/7864900.sdhci/mmc_host*        /storage/sdcard1   auto    nosuid,nodev         wait,voldmanaged=sdcard1:auto,noemulatedsd,encryptable=footer
+/dev/block/bootdevice/by-name/config         /frp  emmc    defaults                                            defaults
+/devices/soc/78db000.usb/msm_hsusb_host*     /storage/usbotg    vfat    nosuid,nodev         wait,voldmanaged=usbotg:auto,encryptable=footer
+/dev/block/bootdevice/by-name/misc           /misc              emmc    defaults             defaults
+/dev/block/bootdevice/by-name/lenovocust     /lenovocust        ext4    defaults             defaults

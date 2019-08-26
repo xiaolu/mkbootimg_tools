@@ -1,0 +1,35 @@
+#
+# ADDITIONAL_DEFAULT_PROPERTIES
+#
+ro.secure=1
+security.perf_harden=1
+ro.adb.secure=1
+ro.allow.mock.location=0
+ro.debuggable=0
+ro.zygote=zygote64_32
+pm.dexopt.first-boot=interpret-only
+pm.dexopt.boot=verify-profile
+pm.dexopt.install=interpret-only
+pm.dexopt.bg-dexopt=speed-profile
+pm.dexopt.ab-ota=speed-profile
+pm.dexopt.nsys-library=speed
+pm.dexopt.shared-apk=speed
+pm.dexopt.forced-dexopt=speed
+pm.dexopt.core-app=speed
+dalvik.vm.image-dex2oat-Xms=64m
+dalvik.vm.image-dex2oat-Xmx=64m
+dalvik.vm.dex2oat-Xms=64m
+dalvik.vm.dex2oat-Xmx=512m
+ro.dalvik.vm.native.bridge=0
+dalvik.vm.usejit=true
+dalvik.vm.usejitprofiles=true
+dalvik.vm.appimageformat=lz4
+debug.atrace.tags.enableflags=0
+ro.logdumpd.enabled=0
+#
+# BOOTIMAGE_BUILD_PROPERTIES
+#
+ro.bootimage.build.date=2018年 09月 12日 星期三 10:17:03 CST
+ro.bootimage.build.date.utc=1536718623
+ro.bootimage.build.fingerprint=Lenovo/TB-8504F/TB-8504F:7.1.1/NMF26F/TB-8504F_S000061_180912_ROW:user/release-keys
+persist.sys.usb.config=none
