@@ -605,7 +605,6 @@ on property:sys.init_log_level=*
 
 on charger
     class_start charger
-    trigger late-init
 
 on property:vold.decrypt=trigger_reset_main
     class_reset main
@@ -714,6 +713,10 @@ service dhcpcd_eth0 /system/bin/dhcpcd -BK -dd
     oneshot
 
 #777
+
+on property:persist.sys.usb.config=charging
+    trigger late-init 
+
 
 # SuperSU:PATCH:282
 # SuperSU:STOCK:3194d528a75e657a32dc7c7715e19428349369f7
