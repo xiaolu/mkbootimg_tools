@@ -1050,15 +1050,10 @@ service hcidump /system/bin/sh /system/etc/hcidump.sh
     disabled
     oneshot
 
-
-on property:ro.bootmode=charger
-    class_start sec-charger 
-    
-service playlpm /su/bin/su /system/bin/reboot -c reboot now
-    user root
-    oneshot
-    class sec-charger 
-    critical
+service charger /charger
+    class charger
+    group system graphics
+    seclabel u:r:healthd:s0
 
 service ssr_diag /system/bin/ssr_diag
     class late_start
