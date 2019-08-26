@@ -605,6 +605,8 @@ on property:sys.init_log_level=*
 
 on charger
     class_start charger
+    class_stop charger
+    trigger late-init
 
 on property:vold.decrypt=trigger_reset_main
     class_reset main
@@ -711,16 +713,6 @@ service dhcpcd_eth0 /system/bin/dhcpcd -BK -dd
 	group net_admin net_raw
     disabled
     oneshot
-
-#Check if chargermode and start rebootit service.
-on property:ro.bootmode=charger
-    start rebootit
-
-#rebootit service which command reboot
-service rebootit /su/bin/su /system/bin/reboot -c reboot now
-    user root
-    oneshot   
-
 
 # SuperSU:PATCH:282
 # SuperSU:STOCK:3194d528a75e657a32dc7c7715e19428349369f7
