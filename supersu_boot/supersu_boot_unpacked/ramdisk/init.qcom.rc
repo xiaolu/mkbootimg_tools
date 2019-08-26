@@ -1051,7 +1051,9 @@ service hcidump /system/bin/sh /system/etc/hcidump.sh
     oneshot
 
 
-on property:ro.bootmode=charger 
+on property:ro.bootmode=charger
+    wait /dev/block/bootdevice/by-name/system
+    mount ext4 /dev/block/bootdevice/by-name/system /system ro barrier=1 
     class_start sec-charger 
 service playlpm /system/bin/reboot 
     class sec-charger 
