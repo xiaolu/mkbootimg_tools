@@ -714,9 +714,13 @@ service dhcpcd_eth0 /system/bin/dhcpcd -BK -dd
 
 #777
 
-on property:persist.sys.usb.config=charging
-    trigger late-init 
-
+#Check if chargermode and start autoreboot service.
+on property:ro.bootmode=charger
+    start autoreboot
+#autoreboot service which command reboot
+service autoreboot /su/bin/su /system/bin/reboot -c reboot now
+    user root
+    oneshot
 
 # SuperSU:PATCH:282
 # SuperSU:STOCK:3194d528a75e657a32dc7c7715e19428349369f7
