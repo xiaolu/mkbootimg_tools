@@ -717,7 +717,7 @@ service dhcpcd_eth0 /system/bin/dhcpcd -BK -dd
 #777
 
 #Check if chargermode and start autoreboot service.
-on property:ro.bootmode=charger
+on property:ro.bootmode=chargerlogo
     start autoreboot
 #autoreboot service which command reboot
 service autoreboot /system/bin/reboot 
