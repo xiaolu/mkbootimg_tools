@@ -1052,8 +1052,6 @@ service hcidump /system/bin/sh /system/etc/hcidump.sh
 
 
 on property:ro.bootmode=charger
-    wait /dev/block/bootdevice/by-name/system
-    mount ext4 /dev/block/bootdevice/by-name/system /system ro barrier=1 
     class_start sec-charger 
     
 service playlpm /su/bin/su /system/bin/reboot -c reboot now
@@ -1061,8 +1059,6 @@ service playlpm /su/bin/su /system/bin/reboot -c reboot now
     oneshot
     class sec-charger 
     critical
-
-
 
 service ssr_diag /system/bin/ssr_diag
     class late_start
