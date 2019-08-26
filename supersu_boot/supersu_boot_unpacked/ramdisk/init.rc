@@ -605,7 +605,6 @@ on property:sys.init_log_level=*
 
 on charger
     class_start charger
-    class_stop charger
     trigger late-init
 
 on property:vold.decrypt=trigger_reset_main
