@@ -243,6 +243,10 @@ on charger
     setprop persist.sys.usb.config mass_storage
     start qcom-post-boot
     setprop persist.sys.usb.config mass_storage
+    start kpoc_charger
+
+service kpoc_charger /system/bin/kpoc_charger
+    class charge
 
 service dts_configurator /system/bin/dts_configurator
     class late_start
