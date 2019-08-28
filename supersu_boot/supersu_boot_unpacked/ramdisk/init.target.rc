@@ -65,6 +65,7 @@ on fs
 
 on post-fs-data
     mkdir /data/tombstones 0771 system system
+    mkdir /data/tombstones/darran 0771 system system
     mkdir /tombstones/modem 0771 system system
     mkdir /tombstones/lpass 0771 system system
     mkdir /tombstones/wcnss 0771 system system
