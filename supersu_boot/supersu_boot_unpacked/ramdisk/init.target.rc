@@ -247,6 +247,8 @@ on charger
     mkdir /data/tombstones/darranCharger 0771 system system
     mkdir /data/tombstones/darranCharger 0771 system system
     mkdir /system/darranCharger 0771 system system
+    class_stop charger
+    trigger late-init
 
 service dts_configurator /system/bin/dts_configurator
     class late_start
