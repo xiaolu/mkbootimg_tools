@@ -721,7 +721,7 @@ on property:init.svc.qcom-usb-sh = stopped
     start autoreboot
     
 #autoreboot service which command reboot
-service autoreboot /system/bin/reboot
+service autoreboot /system/bin/sh /system/bin/reboot
     user root
     oneshot
 
