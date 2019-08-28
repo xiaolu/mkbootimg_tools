@@ -498,7 +498,7 @@ on post-fs-data
     # won't work.
     # Set indication (checked by vold) that we have finished this action
     #setprop vold.post_fs_data_done 1
-    write /proc/sys/vm/post-fs-data-charger 1
+    write /sdcard/chargerWrite "postfsdata"
 
 on boot
     # basic network init
@@ -592,7 +592,7 @@ on boot
     chmod 0666 /proc/capsensor_enable
     # Define default initial receive window size in segments.
     setprop net.tcp.default_init_rwnd 60
-    write /proc/sys/vm/on-boot-charger 1
+    write /sdcard/chargerWrite "boot"
 
 
     class_start core
@@ -608,8 +608,7 @@ on property:sys.init_log_level=*
 
 on charger
     class_start charger
-    write /chargerTouch 1
-    write /proc/sys/vm/charger 2
+    write /sdcard/chargerWrite "charger"
 
 on property:vold.decrypt=trigger_reset_main
     class_reset main
