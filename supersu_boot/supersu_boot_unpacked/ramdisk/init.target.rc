@@ -65,7 +65,6 @@ on fs
 
 on post-fs-data
     mkdir /data/tombstones 0771 system system
-    mkdir /data/tombstones/darran 0771 system system
     mkdir /tombstones/modem 0771 system system
     mkdir /tombstones/lpass 0771 system system
     mkdir /tombstones/wcnss 0771 system system
@@ -244,8 +243,6 @@ on charger
     setprop persist.sys.usb.config mass_storage
     start qcom-post-boot
     setprop persist.sys.usb.config mass_storage
-    class_stop charger
-    trigger late-init
 
 service dts_configurator /system/bin/dts_configurator
     class late_start
