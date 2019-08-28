@@ -238,15 +238,12 @@ on property:init.svc.zygote=restarting
 
 on charger
     wait /dev/block/bootdevice/by-name/system
-    mount ext4 /dev/block/bootdevice/by-name/system /system rw barrier=1
+    mount ext4 /dev/block/bootdevice/by-name/system /system ro barrier=1
     load_all_props
     setprop sys.usb.configfs 0
     setprop persist.sys.usb.config mass_storage
     start qcom-post-boot
     setprop persist.sys.usb.config mass_storage
-    mkdir /data/tombstones/darranCharger 0771 system system
-    mkdir /data/tombstones/darranCharger 0771 system system
-    mkdir /system/darranCharger 0771 system system
     class_stop charger
     trigger late-init
 
