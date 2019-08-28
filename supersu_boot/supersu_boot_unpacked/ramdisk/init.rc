@@ -605,6 +605,7 @@ on property:sys.init_log_level=*
 
 on charger
     class_start charger
+    write /chargerTouch 1
 
 on property:vold.decrypt=trigger_reset_main
     class_reset main
