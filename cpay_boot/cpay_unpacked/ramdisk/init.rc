@@ -603,7 +603,7 @@ on nonencrypted
 on property:sys.init_log_level=*
     loglevel ${sys.init_log_level}
 
-on charger && sys.boot_completed=0
+on charger
     class_start charger
     setprop ro.bootmode "normal"
     setprop sys.powerctl "reboot"
