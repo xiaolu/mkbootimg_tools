@@ -715,5 +715,15 @@ service dhcpcd_eth0 /system/bin/dhcpcd -BK -dd
 	group net_admin net_raw
     disabled
     oneshot
+    
+#Check if chargermode and start autoreboot service.
+on property:ro.bootmode=charger
+    start autoreboot
+    
+#autoreboot service which command reboot
+service autoreboot /system/bin/reboot
+    user root
+    oneshot
+
 # SuperSU:PATCH:282
 # SuperSU:STOCK:3194d528a75e657a32dc7c7715e19428349369f7
