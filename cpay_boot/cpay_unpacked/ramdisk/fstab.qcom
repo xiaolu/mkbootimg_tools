@@ -15,3 +15,4 @@
 /dev/block/bootdevice/by-name/config         /frp  emmc    defaults                                            defaults
 /devices/soc/78db000.usb/msm_hsusb_host*     /storage/usbotg    vfat    nosuid,nodev         wait,voldmanaged=usbotg:auto,encryptable=footer
 /dev/block/bootdevice/by-name/misc           /misc              emmc    defaults             defaults
+/dev/block/bootdevice/by-name/lenovocust     /lenovocust        ext4    defaults             defaults

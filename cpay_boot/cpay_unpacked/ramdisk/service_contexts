@@ -257,5 +257,6 @@ com.qualcomm.qti.qseeproxysample               u:object_r:qseeproxysample_servic
 
 # Regionalization service
 regionalization                                       u:object_r:regionalization_service:s0
+apppc                                     u:object_r:apppc_service:s0
 #line 1 "out/target/product/msm8937_64/obj/ETC/sectxfile_nl_intermediates/sectxfile_nl"
 

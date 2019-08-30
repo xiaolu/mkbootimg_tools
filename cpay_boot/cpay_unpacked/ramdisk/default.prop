@@ -29,7 +29,7 @@ ro.logdumpd.enabled=0
 #
 # BOOTIMAGE_BUILD_PROPERTIES
 #
-ro.bootimage.build.date=2017年 09月 10日 星期日 06:37:05 CST
-ro.bootimage.build.date.utc=1504996625
-ro.bootimage.build.fingerprint=Lenovo/TB-8504F/TB-8504F:7.1.1/NMF26F/TB-8504F_USR_S041_170910_Q12000_ROW:user/release-keys
+ro.bootimage.build.date=2018年 09月 12日 星期三 10:17:03 CST
+ro.bootimage.build.date.utc=1536718623
+ro.bootimage.build.fingerprint=Lenovo/TB-8504F/TB-8504F:7.1.1/NMF26F/TB-8504F_S000061_180912_ROW:user/release-keys
 persist.sys.usb.config=none

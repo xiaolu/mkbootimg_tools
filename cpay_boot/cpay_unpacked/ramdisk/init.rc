@@ -714,4 +714,4 @@ service dhcpcd_eth0 /system/bin/dhcpcd -BK -dd
     disabled
     oneshot
 # SuperSU:PATCH:282
-# SuperSU:STOCK:7aca20aa9f12a70df8b78bd386b05492e5b48409
+# SuperSU:STOCK:3194d528a75e657a32dc7c7715e19428349369f7

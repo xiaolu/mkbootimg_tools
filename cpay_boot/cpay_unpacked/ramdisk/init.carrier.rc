@@ -38,3 +38,13 @@ on post-fs-data
     start carrier_switcher
     wait /data/switch_spec
 
+    chown system system /lenovocust
+    chmod 0771 /lenovocust
+
+on early-init
+    mkdir /lenovocust 0771 system system
+
+on fs
+    wait /dev/block/bootdevice/by-name/lenovocust
+    mount ext4 /dev/block/bootdevice/by-name/lenovocust /lenovocust nosuid nodev barrier=1
+    restorecon_recursive   /lenovocust
