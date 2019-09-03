@@ -1,0 +1,18 @@
+on init
+    mkdir /carrier 0771 system system
+    mkdir /storage/usbotg 0000 system system
+    mount tmpfs tmpfs /storage/usbotg mode=0755,uid=0,gid=0
+    export REMOVABLE_STORAGE_PATH /storage/sdcard1/
+
+on fs
+    wait /dev/block/bootdevice/by-name/carrier
+    mount ext4 /dev/block/bootdevice/by-name/carrier /carrier nosuid nodev barrier=1
+    restorecon_recursive /carrier
+
+on post-fs-data
+    chown system system /carrier
+    chmod 0771 /carrier
+    service nks-c_core-sh /system/bin/sh /init.nks.early_boot.sh
+      class core
+      user root
+      oneshot
