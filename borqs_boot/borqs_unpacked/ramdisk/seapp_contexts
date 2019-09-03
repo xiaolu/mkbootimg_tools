@@ -1,0 +1,13 @@
+isSystemServer=true domain=system_server
+user=system domain=system_app type=system_app_data_file
+user=bluetooth domain=bluetooth type=bluetooth_data_file
+user=nfc domain=nfc type=nfc_data_file
+user=radio domain=radio type=radio_data_file
+user=shared_relro domain=shared_relro
+user=shell domain=shell type=shell_data_file
+user=_isolated domain=isolated_app
+user=_app seinfo=platform domain=platform_app type=app_data_file
+user=_app domain=untrusted_app type=app_data_file
+user=gps domain=location_app type=location_app_data_file
+user=system seinfo=platform name=com.qualcomm.services.location domain=location_app type=location_app_data_file
+user=system seinfo=platform name=com.qualcomm.location.XT domain=location_app type=location_app_data_file
