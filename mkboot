@@ -263,6 +263,26 @@ escaped_cmd_line=`echo $cmd_line | sed "s/'/$esq/g"`
 printf "kernel=kernel\nramdisk=ramdisk\n${s_name}${dt_name}page_size=$page_size\n\
 kernel_size=$kernel_size\nramdisk_size=$ramdisk_size\n${s_size}${dt_size}base_addr=$base_addr\nkernel_offset=$kernel_offset\n\
 ramdisk_offset=$ramdisk_offset\ntags_offset=$tags_offset\ncmd_line=\'$escaped_cmd_line\'\nboard=\"$board\"\n" > img_info
+
+# MTK ramdisk (MTK Header Size 512, MAGIC 0x58881688)
+mtk_header_magic="58881688"
+ramdisk_packed_header=$(od -A n -X -j 0 -N 4 ramdisk.packed | sed 's/ //g')
+if [ $ramdisk_packed_header = $mtk_header_magic ]; then
+    mv ramdisk.packed ramdisk.packed.mtk
+    dd if=ramdisk.packed.mtk of=ramdisk.packed ibs=512 skip=1 2>/dev/null
+    dd if=ramdisk.packed.mtk of=ramdisk.mtk_header bs=512 count=1 2>/dev/null
+    partition_size=$(od -A n -D -j 4 -N 4 ramdisk.packed.mtk | sed 's/ //g')
+    #partition_name=$(od -A n -c -j 8 -N 32 ramdisk.packed.mtk | sed 's/ //g' | sed ':a;N;$!ba;s/\n//g' | sed 's/\\0//g')
+    partition_name=$(od -A n -S1 -j 8 -N 32 ramdisk.packed.mtk)
+    escaped_partition_name=`echo $partition_name | sed "s/'/$esq/g"`
+    printf "ramdisk has a MTK header:\n\tpartition_size=${partition_size}\n\tpartition_name=$escaped_partition_name\n" >> img_info
+    pout "  ramdisk has a MTK header"
+    pout "    header_size : 512"
+    pout "    partition_size : $partition_size"
+    pout "    partition_name : $escaped_partition_name"
+    rm -f ramdisk.packed.mtk
+fi
+
 mkdir ramdisk
 cd ramdisk
 
